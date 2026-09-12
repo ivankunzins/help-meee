@@ -1,13 +1,13 @@
--- SECRET VILLAGE HTTP INSTALLER v4
+-- SECRET VILLAGE HTTP INSTALLER v5
 -- Run this entire script from Roblox Studio Command Bar.
--- The outer loader can be the simple raw.githubusercontent.com loadstring.
--- Files are fetched through the GitHub Contents API and decoded locally.
+-- Outer loader: raw.githubusercontent.com
+-- Files are also fetched from raw.githubusercontent.com.
 
 local HttpService = game:GetService("HttpService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
 
-local API = "https://api.github.com/repos/ivankunzins/help-meee/contents/"
-local REF = "?ref=main"
+local BASE = "https://raw.githubusercontent.com/ivankunzins/help-meee/main/"
+local CACHE_BUSTER = "?install=5"
 
 local files = {
     {path="src/ReplicatedStorage/SecretVillage/Config.lua", className="ModuleScript"},
@@ -67,48 +67,13 @@ local function objectName(path)
         :gsub("%.lua$", "")
 end
 
--- Roblox Studio's HttpService does not provide Base64Decode on all Studio versions.
--- Decode GitHub's base64 content locally so the installer works without that method.
-local BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-local function decodeBase64(input)
-    input = input:gsub("%s", ""):gsub("=+$", "")
-    local out = {}
-    local buffer = 0
-    local bits = 0
-
-    for i = 1, #input do
-        local c = input:sub(i, i)
-        local value = BASE64:find(c, 1, true)
-        if not value then
-            error("Invalid base64 character: " .. tostring(c))
-        end
-        value -= 1
-        buffer = buffer * 64 + value
-        bits += 6
-
-        while bits >= 8 do
-            bits -= 8
-            local byte = math.floor(buffer / (2 ^ bits)) % 256
-            out[#out + 1] = string.char(byte)
-        end
-    end
-
-    return table.concat(out)
-end
-
 local function fetchSource(path)
-    local raw = HttpService:GetAsync(API .. path .. REF, true)
-    local data = HttpService:JSONDecode(raw)
-    if not data.content then
-        error("GitHub returned no file content")
-    end
-    return decodeBase64(data.content)
+    return HttpService:GetAsync(BASE .. path .. CACHE_BUSTER, true)
 end
 
 print("========================================")
-print("SECRET VILLAGE HTTP INSTALLER v4")
-print("Transport: api.github.com")
+print("SECRET VILLAGE HTTP INSTALLER v5")
+print("Transport: raw.githubusercontent.com")
 print("Files: " .. #files)
 print("========================================")
 
@@ -129,9 +94,7 @@ for i, item in ipairs(files) do
     else
         local parent = destination(item)
         local existing = parent:FindFirstChild(name)
-        if existing then
-            existing:Destroy()
-        end
+        if existing then existing:Destroy() end
 
         local obj = Instance.new(item.className)
         obj.Name = name
