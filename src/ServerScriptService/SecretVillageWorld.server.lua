@@ -7,41 +7,20 @@ local Lighting=game:GetService("Lighting")
 local root=Workspace:FindFirstChild("SECRET_VILLAGE_WORLD") or Instance.new("Folder");root.Name="SECRET_VILLAGE_WORLD";root.Parent=Workspace
 local remotes=ReplicatedStorage:WaitForChild("SecretVillageRemotes");local Notify=remotes:WaitForChild("Notify")
 local function notifyAll(t)for _,p in ipairs(Players:GetPlayers())do Notify:FireClient(p,t)end end
-local function part(name,size,cf,mat,parent,trans)
- local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=cf;p.Anchored=true;p.Material=mat or Enum.Material.SmoothPlastic;p.Transparency=trans or 0;p.TopSurface=Enum.SurfaceType.Smooth;p.BottomSurface=Enum.SurfaceType.Smooth;p.Parent=parent or root;return p
-end
-local function label(p,t)
- local g=Instance.new("BillboardGui");g.Size=UDim2.fromOffset(230,48);g.StudsOffset=Vector3.new(0,4,0);g.AlwaysOnTop=true;g.Parent=p
- local l=Instance.new("TextLabel");l.Size=UDim2.fromScale(1,1);l.BackgroundTransparency=1;l.Text=t;l.TextScaled=true;l.Font=Enum.Font.GothamBold;l.Parent=g
-end
-local function house(pos,name,s)
- s=s or 1;local f=Instance.new("Folder");f.Name=name;f.Parent=root
- part("House",Vector3.new(18*s,10*s,16*s),CFrame.new(pos+Vector3.new(0,5*s,0)),Enum.Material.Brick,f)
- part("Roof",Vector3.new(20*s,2*s,18*s),CFrame.new(pos+Vector3.new(0,11*s,0)),Enum.Material.Slate,f)
- local d=part("Door",Vector3.new(4*s,7*s,.5*s),CFrame.new(pos+Vector3.new(0,3.5*s,-8.2*s)),Enum.Material.Wood,f);label(d,name)
- part("Window",Vector3.new(4*s,3*s,.3*s),CFrame.new(pos+Vector3.new(-5*s,6*s,-8.3*s)),Enum.Material.Glass,f)
- part("Window",Vector3.new(4*s,3*s,.3*s),CFrame.new(pos+Vector3.new(5*s,6*s,-8.3*s)),Enum.Material.Glass,f)
-end
-local function tree(pos)
- local f=Instance.new("Folder");f.Name="Tree";f.Parent=root;part("Trunk",Vector3.new(2,8,2),CFrame.new(pos+Vector3.new(0,4,0)),Enum.Material.Wood,f);local c=part("Crown",Vector3.new(8,8,8),CFrame.new(pos+Vector3.new(0,9,0)),Enum.Material.Grass,f);c.Shape=Enum.PartType.Ball
-end
+local function part(name,size,cf,mat,parent,trans)local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=cf;p.Anchored=true;p.Material=mat or Enum.Material.SmoothPlastic;p.Transparency=trans or 0;p.TopSurface=Enum.SurfaceType.Smooth;p.BottomSurface=Enum.SurfaceType.Smooth;p.Parent=parent or root;return p end
+local function label(p,t)local g=Instance.new("BillboardGui");g.Size=UDim2.fromOffset(230,48);g.StudsOffset=Vector3.new(0,4,0);g.AlwaysOnTop=true;g.Parent=p;local l=Instance.new("TextLabel");l.Size=UDim2.fromScale(1,1);l.BackgroundTransparency=1;l.Text=t;l.TextScaled=true;l.Font=Enum.Font.GothamBold;l.Parent=g end
+local function house(pos,name,s)s=s or 1;local f=Instance.new("Folder");f.Name=name;f.Parent=root;part("House",Vector3.new(18*s,10*s,16*s),CFrame.new(pos+Vector3.new(0,5*s,0)),Enum.Material.Brick,f);part("Roof",Vector3.new(20*s,2*s,18*s),CFrame.new(pos+Vector3.new(0,11*s,0)),Enum.Material.Slate,f);local d=part("Door",Vector3.new(4*s,7*s,.5*s),CFrame.new(pos+Vector3.new(0,3.5*s,-8.2*s)),Enum.Material.Wood,f);label(d,name);part("Window",Vector3.new(4*s,3*s,.3*s),CFrame.new(pos+Vector3.new(-5*s,6*s,-8.3*s)),Enum.Material.Glass,f);part("Window",Vector3.new(4*s,3*s,.3*s),CFrame.new(pos+Vector3.new(5*s,6*s,-8.3*s)),Enum.Material.Glass,f)end
+local function tree(pos)local f=Instance.new("Folder");f.Name="Tree";f.Parent=root;part("Trunk",Vector3.new(2,8,2),CFrame.new(pos+Vector3.new(0,4,0)),Enum.Material.Wood,f);local c=part("Crown",Vector3.new(8,8,8),CFrame.new(pos+Vector3.new(0,9,0)),Enum.Material.Grass,f);c.Shape=Enum.PartType.Ball end
 local function build()
  if root:GetAttribute("Built")then return end;root:SetAttribute("Built",true)
  part("MainRoad",Vector3.new(230,.25,14),CFrame.new(0,.2,0),Enum.Material.Asphalt);part("CrossRoad",Vector3.new(14,.25,210),CFrame.new(0,.2,0),Enum.Material.Asphalt)
  local square=part("VillageSquare",Vector3.new(55,.3,55),CFrame.new(35,.25,30),Enum.Material.Cobblestone);label(square,"VILLAGE SQUARE")
- local river=part("River",Vector3.new(120,1,34),CFrame.new(-35,-.35,58),Enum.Material.Water,.25);river.Color=Color3.fromRGB(35,120,170)
- part("RiverBank",Vector3.new(124,1,4),CFrame.new(-35,.1,39),Enum.Material.Sand);part("RiverBank",Vector3.new(124,1,4),CFrame.new(-35,.1,77),Enum.Material.Sand)
- -- bridge makes the river part of normal navigation, not a dead zone.
- part("Bridge",Vector3.new(18,1,40),CFrame.new(-35,.8,58),Enum.Material.Wood)
- local door=part("UnderwaterDoor",Vector3.new(10,8,1),CFrame.new(-45,-3,65),Enum.Material.Metal);label(door,"???")
- local dp=Instance.new("ProximityPrompt");dp.ActionText="Открыть";dp.ObjectText="Подводная дверь";dp.HoldDuration=1.2;dp.Parent=door;dp.Triggered:Connect(function(p)if(p:GetAttribute("SecretsFound")or 0)<1 then Notify:FireClient(p,"🌊 Дверь заперта. Сначала найди первый секрет.")else Notify:FireClient(p,"🚪 Дверь разблокирована! Внутри — тайная комната.")end end)
+ local river=part("River",Vector3.new(120,1,34),CFrame.new(-35,-.35,58),Enum.Material.Water,nil,.25);river.Color=Color3.fromRGB(35,120,170)
+ part("RiverBank",Vector3.new(124,1,4),CFrame.new(-35,.1,39),Enum.Material.Sand);part("RiverBank",Vector3.new(124,1,4),CFrame.new(-35,.1,77),Enum.Material.Sand);part("Bridge",Vector3.new(18,1,40),CFrame.new(-35,.8,58),Enum.Material.Wood)
+ local door=part("UnderwaterDoor",Vector3.new(10,8,1),CFrame.new(-45,-3,65),Enum.Material.Metal);label(door,"???");local dp=Instance.new("ProximityPrompt");dp.ActionText="Открыть";dp.ObjectText="Подводная дверь";dp.HoldDuration=1.2;dp.Parent=door;dp.Triggered:Connect(function(p)if(p:GetAttribute("SecretsFound")or 0)<1 then Notify:FireClient(p,"🌊 Дверь заперта. Сначала найди первый секрет.")else Notify:FireClient(p,"🚪 Дверь разблокирована! Внутри — тайная комната.")end end)
  local room=Instance.new("Folder");room.Name="SecretRoom";room.Parent=root;part("RoomFloor",Vector3.new(30,1,24),CFrame.new(-45,-8,92),Enum.Material.Metal,room);part("RoomBack",Vector3.new(30,12,1),CFrame.new(-45,-2,104),Enum.Material.Metal,room);part("RoomLight",Vector3.new(2,2,2),CFrame.new(-45,-1,92),Enum.Material.Neon,room)
  house(Vector3.new(55,0,-5),"Bakery",1);house(Vector3.new(90,0,45),"Village Shop",.9);house(Vector3.new(-70,0,-30),"Old House",1.15);house(Vector3.new(70,0,90),"Garage",1.1);house(Vector3.new(-75,0,75),"Forest Cabin",.85)
- -- landmarks: park, fountain, gas station and docks.
- local park=part("CentralPark",Vector3.new(42,.3,32),CFrame.new(25,.3,-45),Enum.Material.Grass);label(park,"🌳 CENTRAL PARK")
- local fountain=part("Fountain",Vector3.new(7,1,7),CFrame.new(25,1,-45),Enum.Material.Marble);label(fountain,"⛲")
- part("GasStation",Vector3.new(24,5,16),CFrame.new(92,2.5,-45),Enum.Material.Concrete);local gas=part("GasSign",Vector3.new(4,8,1),CFrame.new(92,7,-54),Enum.Material.Neon);label(gas,"⛽ GAS")
- local dock=part("Dock",Vector3.new(24,1,8),CFrame.new(-85,.8,58),Enum.Material.Wood);label(dock,"🎣 DOCKS")
+ local park=part("CentralPark",Vector3.new(42,.3,32),CFrame.new(25,.3,-45),Enum.Material.Grass);label(park,"🌳 CENTRAL PARK");local fountain=part("Fountain",Vector3.new(7,1,7),CFrame.new(25,1,-45),Enum.Material.Marble);label(fountain,"⛲");part("GasStation",Vector3.new(24,5,16),CFrame.new(92,2.5,-45),Enum.Material.Concrete);local gas=part("GasSign",Vector3.new(4,8,1),CFrame.new(92,7,-54),Enum.Material.Neon);label(gas,"⛽ GAS");local dock=part("Dock",Vector3.new(24,1,8),CFrame.new(-85,.8,58),Enum.Material.Wood);label(dock,"🎣 DOCKS")
  local clue=part("ClueStone",Vector3.new(3,2,3),CFrame.new(-20,1,-48),Enum.Material.Slate);label(clue,"...");local cp=Instance.new("ProximityPrompt");cp.ActionText="Осмотреть";cp.ObjectText="Старая надпись";cp.Parent=clue;cp.Triggered:Connect(function(p)Notify:FireClient(p,"🗿 «Вода помнит то, что деревня забыла».")end)
  for i=1,55 do local a=math.random()*math.pi*2;local r=math.random(95,130);tree(Vector3.new(math.cos(a)*r,0,math.sin(a)*r))end
  local trader=part("WanderingTrader",Vector3.new(4,7,4),CFrame.new(105,3.5,-75),Enum.Material.Wood);label(trader,"WANDERING TRADER");local tp=Instance.new("ProximityPrompt");tp.ActionText="Торговать";tp.ObjectText="Редкий торговец";tp.Parent=trader;tp.Triggered:Connect(function(p)Notify:FireClient(p,"🛒 Торговец ищет исследователей. Следи за событиями!")end)
