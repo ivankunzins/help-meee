@@ -1,8 +1,9 @@
--- SECRET VILLAGE GRAPHICS v1
--- Natural lighting, atmosphere, materials, foliage and environmental polish.
+-- SECRET VILLAGE GRAPHICS v2
+-- Natural lighting, atmosphere, weather response, materials, foliage and local lights.
 local Lighting=game:GetService("Lighting")
 local Workspace=game:GetService("Workspace")
 local Terrain=Workspace.Terrain
+local TweenService=game:GetService("TweenService")
 Lighting.Technology=Enum.Technology.Future
 Lighting.GlobalShadows=true
 Lighting.Brightness=2.1
@@ -23,35 +24,20 @@ local function ensure(className,name,parent)
  x=Instance.new(className);x.Name=name;x.Parent=parent;return x
 end
 local atmosphere=ensure("Atmosphere","NaturalAtmosphere",Lighting)
-atmosphere.Density=0.28
-atmosphere.Offset=0.12
-atmosphere.Color=Color3.fromRGB(202,218,224)
-atmosphere.Decay=Color3.fromRGB(116,133,146)
-atmosphere.Glare=0.08
-atmosphere.Haze=1.15
+atmosphere.Density=0.28;atmosphere.Offset=0.12
+atmosphere.Color=Color3.fromRGB(202,218,224);atmosphere.Decay=Color3.fromRGB(116,133,146)
+atmosphere.Glare=0.08;atmosphere.Haze=1.15
 local cc=ensure("ColorCorrectionEffect","NaturalColor",Lighting)
-cc.Brightness=0.015
-cc.Contrast=0.08
-cc.Saturation=0.06
-cc.TintColor=Color3.fromRGB(255,251,244)
+cc.Brightness=0.015;cc.Contrast=0.08;cc.Saturation=0.06;cc.TintColor=Color3.fromRGB(255,251,244)
 local bloom=ensure("BloomEffect","SoftSunBloom",Lighting)
-bloom.Intensity=0.08
-bloom.Size=18
-bloom.Threshold=1.15
+bloom.Intensity=0.08;bloom.Size=18;bloom.Threshold=1.15
 local sun=ensure("SunRaysEffect","SunRays",Lighting)
-sun.Intensity=0.045
-sun.Spread=0.72
-local dof=ensure("DepthOfFieldEffect","SubtleDepth",Lighting)
-dof.Enabled=false
+sun.Intensity=0.045;sun.Spread=0.72
+local dof=ensure("DepthOfFieldEffect","SubtleDepth",Lighting);dof.Enabled=false
 local clouds=ensure("Clouds","VillageClouds",Terrain)
-clouds.Cover=0.34
-clouds.Density=0.22
-clouds.Color=Color3.fromRGB(238,241,240)
-Terrain.WaterColor=Color3.fromRGB(42,125,164)
-Terrain.WaterTransparency=0.18
-Terrain.WaterReflectance=0.28
-Terrain.WaterWaveSize=0.12
-Terrain.WaterWaveSpeed=7
+clouds.Cover=0.34;clouds.Density=0.22;clouds.Color=Color3.fromRGB(238,241,240)
+Terrain.WaterColor=Color3.fromRGB(42,125,164);Terrain.WaterTransparency=0.18;Terrain.WaterReflectance=0.28
+Terrain.WaterWaveSize=0.12;Terrain.WaterWaveSpeed=7
 local world=Workspace:FindFirstChild("SECRET_VILLAGE_WORLD")
 if world then
  for _,obj in ipairs(world:GetDescendants()) do
@@ -62,8 +48,7 @@ if world then
    elseif obj.Name=="Bridge" or obj.Name=="Dock" then obj.Material=Enum.Material.WoodPlanks
    elseif obj.Name=="Roof" then obj.Material=Enum.Material.Slate
    elseif obj.Name=="House" then obj.Material=Enum.Material.Brick
-   elseif obj.Name=="Window" then obj.Material=Enum.Material.Glass;obj.Reflectance=0.18
-   elseif obj.Name=="RoomLight" then obj.Material=Enum.Material.Neon;obj.Transparency=0.08 end
+   elseif obj.Name=="Window" then obj.Material=Enum.Material.Glass;obj.Reflectance=0.18 end
   end
  end
 end
@@ -90,4 +75,30 @@ if world then
   end
  end
 end
-print("[SecretVillageGraphics] Natural graphics initialized")
+local function tweenLighting(props,duration)
+ TweenService:Create(Lighting,TweenInfo.new(duration,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),props):Play()
+end
+local function watch(name)
+ Workspace:GetAttributeChangedSignal(name):Connect(function()
+  local active=Workspace:GetAttribute(name)==true
+  if name=="NightEvent" then
+   if active then
+    tweenLighting({ClockTime=0.4,Brightness=0.55,ExposureCompensation=-0.35,FogEnd=420},2)
+    tweenLighting({Ambient=Color3.fromRGB(28,34,48),OutdoorAmbient=Color3.fromRGB(58,68,88)},2)
+    atmosphere.Density=0.34;atmosphere.Haze=2.1;clouds.Density=0.28
+   else
+    tweenLighting({ClockTime=14.2,Brightness=2.1,ExposureCompensation=0.05,FogEnd=900},3)
+    tweenLighting({Ambient=Color3.fromRGB(72,78,82),OutdoorAmbient=Color3.fromRGB(128,137,142)},3)
+    atmosphere.Density=0.28;atmosphere.Haze=1.15;clouds.Density=0.22
+   end
+  elseif name=="BlackoutEvent" and active then
+   tweenLighting({Brightness=0.18,ExposureCompensation=-1.0},1)
+   atmosphere.Haze=2.8
+  elseif name=="BlackoutEvent" and not active then
+   tweenLighting({Brightness=2.1,ExposureCompensation=0.05},2)
+   atmosphere.Haze=1.15
+  end
+ end)
+end
+watch("NightEvent");watch("BlackoutEvent")
+print("[SecretVillageGraphics] Natural graphics v2 initialized")
