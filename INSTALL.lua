@@ -1,6 +1,7 @@
--- SECRET VILLAGE HTTP INSTALLER v3
+-- SECRET VILLAGE HTTP INSTALLER v4
 -- Run this entire script from Roblox Studio Command Bar.
--- Uses GitHub API instead of raw.githubusercontent.com.
+-- The outer loader can be the simple raw.githubusercontent.com loadstring.
+-- Files are fetched through the GitHub Contents API and decoded locally.
 
 local HttpService = game:GetService("HttpService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
@@ -66,12 +67,47 @@ local function objectName(path)
         :gsub("%.lua$", "")
 end
 
-local function decodeGitHubContent(data)
-    return HttpService:Base64Decode((data.content or ""):gsub("%s", ""))
+-- Roblox Studio's HttpService does not provide Base64Decode on all Studio versions.
+-- Decode GitHub's base64 content locally so the installer works without that method.
+local BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+local function decodeBase64(input)
+    input = input:gsub("%s", ""):gsub("=+$", "")
+    local out = {}
+    local buffer = 0
+    local bits = 0
+
+    for i = 1, #input do
+        local c = input:sub(i, i)
+        local value = BASE64:find(c, 1, true)
+        if not value then
+            error("Invalid base64 character: " .. tostring(c))
+        end
+        value -= 1
+        buffer = buffer * 64 + value
+        bits += 6
+
+        while bits >= 8 do
+            bits -= 8
+            local byte = math.floor(buffer / (2 ^ bits)) % 256
+            out[#out + 1] = string.char(byte)
+        end
+    end
+
+    return table.concat(out)
+end
+
+local function fetchSource(path)
+    local raw = HttpService:GetAsync(API .. path .. REF, true)
+    local data = HttpService:JSONDecode(raw)
+    if not data.content then
+        error("GitHub returned no file content")
+    end
+    return decodeBase64(data.content)
 end
 
 print("========================================")
-print("SECRET VILLAGE HTTP INSTALLER v3")
+print("SECRET VILLAGE HTTP INSTALLER v4")
 print("Transport: api.github.com")
 print("Files: " .. #files)
 print("========================================")
@@ -84,10 +120,7 @@ for i, item in ipairs(files) do
     print(string.format("[%02d/%02d] GET %s", i, #files, name))
 
     local ok, source = pcall(function()
-        local raw = HttpService:GetAsync(API .. item.path .. REF)
-        local data = HttpService:JSONDecode(raw)
-        if not data.content then error("GitHub returned no file content") end
-        return decodeGitHubContent(data)
+        return fetchSource(item.path)
     end)
 
     if not ok then
@@ -96,7 +129,9 @@ for i, item in ipairs(files) do
     else
         local parent = destination(item)
         local existing = parent:FindFirstChild(name)
-        if existing then existing:Destroy() end
+        if existing then
+            existing:Destroy()
+        end
 
         local obj = Instance.new(item.className)
         obj.Name = name
