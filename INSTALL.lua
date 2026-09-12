@@ -1,11 +1,11 @@
--- SECRET VILLAGE HTTP INSTALLER v7
+-- SECRET VILLAGE HTTP INSTALLER v8
 -- Run this entire script from Roblox Studio Command Bar.
 -- Outer loader: raw.githubusercontent.com
--- Project files: jsDelivr CDN.
+-- Project files: jsDelivr CDN pinned to the complete project commit.
 local HttpService=game:GetService("HttpService")
 local ScriptEditorService=game:GetService("ScriptEditorService")
-local BASE="https://cdn.jsdelivr.net/gh/ivankunzins/help-meee@main/"
-local CACHE_BUSTER="?install=7"
+local BASE="https://cdn.jsdelivr.net/gh/ivankunzins/help-meee@e55549f4c3754083537d5ea27f9a9f68e2d0a49b/"
+local CACHE_BUSTER="?install=8"
 local files={
 {path="src/ReplicatedStorage/SecretVillage/Config.lua",className="ModuleScript"},
 {path="src/ReplicatedStorage/SecretVillage/ShopConfig.lua",className="ModuleScript"},
@@ -42,7 +42,7 @@ local function folder(p,n)local f=p:FindFirstChild(n);if not f then f=Instance.n
 local function destination(i)if i.path:find("src/ReplicatedStorage/SecretVillage/",1,true)then return folder(game:GetService("ReplicatedStorage"),"SecretVillage")elseif i.path:find("src/StarterPlayer/StarterPlayerScripts/",1,true)then return game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")end;return game:GetService("ServerScriptService")end
 local function objectName(path)return path:match("([^/]+)$"):gsub("%.server%.lua$",""):gsub("%.client%.lua$",""):gsub("%.lua$","")end
 local function fetchSource(path)return HttpService:GetAsync(BASE..path..CACHE_BUSTER,true)end
-print("========================================");print("SECRET VILLAGE HTTP INSTALLER v7");print("Transport: jsDelivr CDN");print("Files: "..#files);print("========================================")
+print("========================================");print("SECRET VILLAGE HTTP INSTALLER v8");print("Transport: jsDelivr CDN (pinned)");print("Files: "..#files);print("========================================")
 local okCount=0;local failCount=0
 for i,item in ipairs(files)do local name=objectName(item.path);print(string.format("[%02d/%02d] GET %s",i,#files,name));local ok,source=pcall(function()return fetchSource(item.path)end);if not ok then failCount+=1;warn("DOWNLOAD FAILED: "..item.path.." | "..tostring(source))else local parent=destination(item);local existing=parent:FindFirstChild(name);if existing then existing:Destroy()end;local obj=Instance.new(item.className);obj.Name=name;obj.Parent=parent;local writeOk,writeErr=pcall(function()ScriptEditorService:UpdateSourceAsync(obj,function()return source end)end);if not writeOk then obj:Destroy();failCount+=1;warn("WRITE FAILED: "..item.path.." | "..tostring(writeErr))else okCount+=1;print(string.format("       OK — %d%%",math.floor(i/#files*100)))end end end
 print("========================================");print(string.format("INSTALL COMPLETE: %d/%d OK",okCount,#files));print("FAILED: "..failCount);if failCount==0 then print("SUCCESS — press Play to test Secret Village")else warn("INSTALL INCOMPLETE — check errors above")end;print("========================================")
