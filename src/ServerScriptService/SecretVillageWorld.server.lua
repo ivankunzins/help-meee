@@ -1,9 +1,10 @@
--- SECRET VILLAGE WORLD v4
--- World generation + landmarks + atmosphere/events only.
+-- SECRET VILLAGE WORLD v5
+-- World generation, landmarks, secret-room portal and atmosphere/events.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Workspace=game:GetService("Workspace")
 local Lighting=game:GetService("Lighting")
+local TweenService=game:GetService("TweenService")
 local root=Workspace:FindFirstChild("SECRET_VILLAGE_WORLD") or Instance.new("Folder");root.Name="SECRET_VILLAGE_WORLD";root.Parent=Workspace
 local remotes=ReplicatedStorage:WaitForChild("SecretVillageRemotes");local Notify=remotes:WaitForChild("Notify")
 local function notifyAll(t)for _,p in ipairs(Players:GetPlayers())do Notify:FireClient(p,t)end end
@@ -11,17 +12,30 @@ local function part(name,size,cf,mat,parent,trans)local p=Instance.new("Part");p
 local function label(p,t)local g=Instance.new("BillboardGui");g.Size=UDim2.fromOffset(230,48);g.StudsOffset=Vector3.new(0,4,0);g.AlwaysOnTop=true;g.Parent=p;local l=Instance.new("TextLabel");l.Size=UDim2.fromScale(1,1);l.BackgroundTransparency=1;l.Text=t;l.TextScaled=true;l.Font=Enum.Font.GothamBold;l.Parent=g end
 local function house(pos,name,s)s=s or 1;local f=Instance.new("Folder");f.Name=name;f.Parent=root;part("House",Vector3.new(18*s,10*s,16*s),CFrame.new(pos+Vector3.new(0,5*s,0)),Enum.Material.Brick,f);part("Roof",Vector3.new(20*s,2*s,18*s),CFrame.new(pos+Vector3.new(0,11*s,0)),Enum.Material.Slate,f);local d=part("Door",Vector3.new(4*s,7*s,.5*s),CFrame.new(pos+Vector3.new(0,3.5*s,-8.2*s)),Enum.Material.Wood,f);label(d,name);part("Window",Vector3.new(4*s,3*s,.3*s),CFrame.new(pos+Vector3.new(-5*s,6*s,-8.3*s)),Enum.Material.Glass,f);part("Window",Vector3.new(4*s,3*s,.3*s),CFrame.new(pos+Vector3.new(5*s,6*s,-8.3*s)),Enum.Material.Glass,f)end
 local function tree(pos)local f=Instance.new("Folder");f.Name="Tree";f.Parent=root;part("Trunk",Vector3.new(2,8,2),CFrame.new(pos+Vector3.new(0,4,0)),Enum.Material.Wood,f);local c=part("Crown",Vector3.new(8,8,8),CFrame.new(pos+Vector3.new(0,9,0)),Enum.Material.Grass,f);c.Shape=Enum.PartType.Ball end
+local function makePortal(p,name,text,targetCFrame,needSecret)
+ local pr=Instance.new("ProximityPrompt");pr.ActionText=text;pr.ObjectText=name;pr.HoldDuration=.8;pr.Parent=p
+ pr.Triggered:Connect(function(player)
+  if needSecret and (player:GetAttribute("SecretsFound")or 0)<1 then Notify:FireClient(player,"🌊 Дверь заперта. Сначала найди первый секрет.");return end
+  local c=player.Character;if not c then return end;local hrp=c:FindFirstChild("HumanoidRootPart");if not hrp then return end
+  local flash=Instance.new("Part");flash.Anchored=true;flash.CanCollide=false;flash.Size=Vector3.new(1,1,1);flash.CFrame=hrp.CFrame;flash.Material=Enum.Material.Neon;flash.Transparency=.15;flash.Parent=Workspace
+  local tw=TweenService:Create(flash,TweenInfo.new(.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=Vector3.new(16,16,16),Transparency=1});tw:Play();tw.Completed:Wait();flash:Destroy()
+  c:PivotTo(targetCFrame);Notify:FireClient(player,"✨ Тайное место найдено. Осмотрись — здесь может быть ещё один секрет.")
+ end)
+end
 local function build()
  if root:GetAttribute("Built")then return end;root:SetAttribute("Built",true)
  part("MainRoad",Vector3.new(230,.25,14),CFrame.new(0,.2,0),Enum.Material.Asphalt);part("CrossRoad",Vector3.new(14,.25,210),CFrame.new(0,.2,0),Enum.Material.Asphalt)
  local square=part("VillageSquare",Vector3.new(55,.3,55),CFrame.new(35,.25,30),Enum.Material.Cobblestone);label(square,"VILLAGE SQUARE")
  local river=part("River",Vector3.new(120,1,34),CFrame.new(-35,-.35,58),Enum.Material.Water,nil,.25);river.Color=Color3.fromRGB(35,120,170)
  part("RiverBank",Vector3.new(124,1,4),CFrame.new(-35,.1,39),Enum.Material.Sand);part("RiverBank",Vector3.new(124,1,4),CFrame.new(-35,.1,77),Enum.Material.Sand);part("Bridge",Vector3.new(18,1,40),CFrame.new(-35,.8,58),Enum.Material.Wood)
- local door=part("UnderwaterDoor",Vector3.new(10,8,1),CFrame.new(-45,-3,65),Enum.Material.Metal);label(door,"???");local dp=Instance.new("ProximityPrompt");dp.ActionText="Открыть";dp.ObjectText="Подводная дверь";dp.HoldDuration=1.2;dp.Parent=door;dp.Triggered:Connect(function(p)if(p:GetAttribute("SecretsFound")or 0)<1 then Notify:FireClient(p,"🌊 Дверь заперта. Сначала найди первый секрет.")else Notify:FireClient(p,"🚪 Дверь разблокирована! Внутри — тайная комната.")end end)
- local room=Instance.new("Folder");room.Name="SecretRoom";room.Parent=root;part("RoomFloor",Vector3.new(30,1,24),CFrame.new(-45,-8,92),Enum.Material.Metal,room);part("RoomBack",Vector3.new(30,12,1),CFrame.new(-45,-2,104),Enum.Material.Metal,room);part("RoomLight",Vector3.new(2,2,2),CFrame.new(-45,-1,92),Enum.Material.Neon,room)
+ local door=part("UnderwaterDoor",Vector3.new(10,8,1),CFrame.new(-45,-3,65),Enum.Material.Metal);label(door,"???");makePortal(door,"Подводная дверь","Погрузиться",CFrame.new(-45,-7,88),true)
+ local room=Instance.new("Folder");room.Name="SecretRoom";room.Parent=root
+ part("RoomFloor",Vector3.new(30,1,24),CFrame.new(-45,-8,92),Enum.Material.Metal,room);part("RoomBack",Vector3.new(30,12,1),CFrame.new(-45,-2,104),Enum.Material.Metal,room);part("RoomLight",Vector3.new(2,2,2),CFrame.new(-45,-1,92),Enum.Material.Neon,room)
+ local chest=part("SecretChest",Vector3.new(5,3,4),CFrame.new(-45,-5.8,94),Enum.Material.Wood,room);label(chest,"🎁 SECRET CHEST");local cp=Instance.new("ProximityPrompt");cp.ActionText="Осмотреть";cp.ObjectText="Тайный сундук";cp.HoldDuration=.7;cp.Parent=chest;cp.Triggered:Connect(function(p)Notify:FireClient(p,"🎁 В сундуке что-то лежит… но замок требует ещё секретов.")end)
+ local back=part("ReturnPortal",Vector3.new(6,5,1),CFrame.new(-45,-5,82),Enum.Material.Neon,room);label(back,"↩ ВЫХОД");makePortal(back,"Выход","Вернуться в деревню",CFrame.new(-45,4,58),false)
  house(Vector3.new(55,0,-5),"Bakery",1);house(Vector3.new(90,0,45),"Village Shop",.9);house(Vector3.new(-70,0,-30),"Old House",1.15);house(Vector3.new(70,0,90),"Garage",1.1);house(Vector3.new(-75,0,75),"Forest Cabin",.85)
  local park=part("CentralPark",Vector3.new(42,.3,32),CFrame.new(25,.3,-45),Enum.Material.Grass);label(park,"🌳 CENTRAL PARK");local fountain=part("Fountain",Vector3.new(7,1,7),CFrame.new(25,1,-45),Enum.Material.Marble);label(fountain,"⛲");part("GasStation",Vector3.new(24,5,16),CFrame.new(92,2.5,-45),Enum.Material.Concrete);local gas=part("GasSign",Vector3.new(4,8,1),CFrame.new(92,7,-54),Enum.Material.Neon);label(gas,"⛽ GAS");local dock=part("Dock",Vector3.new(24,1,8),CFrame.new(-85,.8,58),Enum.Material.Wood);label(dock,"🎣 DOCKS")
- local clue=part("ClueStone",Vector3.new(3,2,3),CFrame.new(-20,1,-48),Enum.Material.Slate);label(clue,"...");local cp=Instance.new("ProximityPrompt");cp.ActionText="Осмотреть";cp.ObjectText="Старая надпись";cp.Parent=clue;cp.Triggered:Connect(function(p)Notify:FireClient(p,"🗿 «Вода помнит то, что деревня забыла».")end)
+ local clue=part("ClueStone",Vector3.new(3,2,3),CFrame.new(-20,1,-48),Enum.Material.Slate);label(clue,"...");local cluePrompt=Instance.new("ProximityPrompt");cluePrompt.ActionText="Осмотреть";cluePrompt.ObjectText="Старая надпись";cluePrompt.Parent=clue;cluePrompt.Triggered:Connect(function(p)Notify:FireClient(p,"🗿 «Вода помнит то, что деревня забыла». Река ведёт к тому, что спрятано ниже.")end)
  for i=1,55 do local a=math.random()*math.pi*2;local r=math.random(95,130);tree(Vector3.new(math.cos(a)*r,0,math.sin(a)*r))end
  local trader=part("WanderingTrader",Vector3.new(4,7,4),CFrame.new(105,3.5,-75),Enum.Material.Wood);label(trader,"WANDERING TRADER");local tp=Instance.new("ProximityPrompt");tp.ActionText="Торговать";tp.ObjectText="Редкий торговец";tp.Parent=trader;tp.Triggered:Connect(function(p)Notify:FireClient(p,"🛒 Торговец ищет исследователей. Следи за событиями!")end)
 end
