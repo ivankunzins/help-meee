@@ -1,13 +1,13 @@
--- SECRET VILLAGE HTTP INSTALLER v5
+-- SECRET VILLAGE HTTP INSTALLER v6
 -- Run this entire script from Roblox Studio Command Bar.
 -- Outer loader: raw.githubusercontent.com
--- Files are also fetched from raw.githubusercontent.com.
+-- Project files: jsDelivr CDN (avoids GitHub raw rate limits).
 
 local HttpService = game:GetService("HttpService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
 
-local BASE = "https://raw.githubusercontent.com/ivankunzins/help-meee/main/"
-local CACHE_BUSTER = "?install=5"
+local BASE = "https://cdn.jsdelivr.net/gh/ivankunzins/help-meee@ebfecf1d2ad823c20a2404d099322440be65ba09/"
+local CACHE_BUSTER = "?install=6"
 
 local files = {
     {path="src/ReplicatedStorage/SecretVillage/Config.lua", className="ModuleScript"},
@@ -72,8 +72,8 @@ local function fetchSource(path)
 end
 
 print("========================================")
-print("SECRET VILLAGE HTTP INSTALLER v5")
-print("Transport: raw.githubusercontent.com")
+print("SECRET VILLAGE HTTP INSTALLER v6")
+print("Transport: jsDelivr CDN")
 print("Files: " .. #files)
 print("========================================")
 
