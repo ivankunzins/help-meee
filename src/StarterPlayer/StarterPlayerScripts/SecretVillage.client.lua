@@ -1,6 +1,4 @@
--- SECRET VILLAGE — FULL UI
--- LocalScript: StarterPlayer > StarterPlayerScripts
-
+-- SECRET VILLAGE — unified mobile/PC HUD
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local player=Players.LocalPlayer
@@ -10,42 +8,58 @@ local Hint=remotes:WaitForChild("BuyHint")
 local StartJob=remotes:WaitForChild("StartJob")
 local EndJob=remotes:WaitForChild("EndJob")
 
-local gui=Instance.new("ScreenGui");gui.Name="SecretVillageUI";gui.ResetOnSpawn=false;gui.Parent=player:WaitForChild("PlayerGui")
-local function frame(size,pos,parent)
- local f=Instance.new("Frame");f.Size=size;f.Position=pos;f.BackgroundTransparency=.12;f.Parent=parent;return f
+local gui=Instance.new("ScreenGui")
+gui.Name="SecretVillageUI"
+gui.ResetOnSpawn=false
+gui.IgnoreGuiInset=true
+gui.Parent=player:WaitForChild("PlayerGui")
+
+local function panel(size,pos)
+ local f=Instance.new("Frame");f.Size=size;f.Position=pos;f.BackgroundTransparency=.12;f.BorderSizePixel=0;f.Parent=gui
+ local c=Instance.new("UICorner");c.CornerRadius=UDim.new(0,14);c.Parent=f
+ return f
 end
-local function text(size,pos,str,parent)
- local t=Instance.new("TextLabel");t.Size=size;t.Position=pos;t.BackgroundTransparency=1;t.Text=str;t.TextScaled=true;t.Font=Enum.Font.GothamBold;t.Parent=parent;return t
+local function label(size,pos,str,parent)
+ local t=Instance.new("TextLabel");t.Size=size;t.Position=pos;t.BackgroundTransparency=1;t.Text=str;t.TextScaled=true;t.Font=Enum.Font.GothamBold;t.TextColor3=Color3.new(1,1,1);t.Parent=parent;return t
 end
-local top=frame(UDim2.fromOffset(360,100),UDim2.new(.5,-180,0,16),gui)
-text(UDim2.fromScale(1,.38),UDim2.fromScale(0,0),"🔎 SECRET VILLAGE",top)
-local timer=text(UDim2.fromScale(1,.55),UDim2.fromScale(0,.36),"⏱️ 30:00",top)
-local money=text(UDim2.fromOffset(190,50),UDim2.new(1,-205,0,125),"💰 $0",gui)
-local secrets=text(UDim2.fromOffset(180,50),UDim2.new(0,18,0,125),"🔐 0 / 100",gui)
-local buttons=frame(UDim2.fromOffset(230,120),UDim2.new(0,18,1,-150),gui)
+local top=panel(UDim2.new(0.9,0,0,96),UDim2.new(.05,0,0,14))
+label(UDim2.fromScale(.6,.4),UDim2.fromScale(.02,.04),"🔎 SECRET VILLAGE",top)
+local timer=label(UDim2.fromScale(.6,.48),UDim2.fromScale(.02,.43),"⏱️ 30:00",top)
+local money=label(UDim2.fromScale(.32,.42),UDim2.fromScale(.66,.06),"💰 $0",top)
+local secrets=label(UDim2.fromScale(.32,.42),UDim2.fromScale(.66,.50),"🔐 0 / 100",top)
+
+local objective=panel(UDim2.new(.9,0,0,55),UDim2.new(.05,0,0,122))
+local objectiveText=label(UDim2.fromScale(1,1),UDim2.fromScale(0,0),"🎯 Цель: найти первый секрет",objective)
+
+local buttons=panel(UDim2.fromOffset(235,112),UDim2.new(0,14,1,-130))
 local function button(y,str,fn)
- local b=Instance.new("TextButton");b.Size=UDim2.new(1,-10,0,48);b.Position=UDim2.new(0,5,0,y);b.Text=str;b.TextScaled=true;b.Font=Enum.Font.GothamBold;b.Parent=buttons;b.Activated:Connect(fn);return b
+ local b=Instance.new("TextButton");b.Size=UDim2.new(1,-10,0,46);b.Position=UDim2.new(0,5,0,y);b.Text=str;b.TextScaled=true;b.Font=Enum.Font.GothamBold;b.Parent=buttons
+ local c=Instance.new("UICorner");c.CornerRadius=UDim.new(0,10);c.Parent=b
+ b.Activated:Connect(fn);return b
 end
 button(5,"🔎 Подсказка — $500",function()Hint:FireServer()end)
-local jobButton=button(61,"🧹 Работа — $100",function()StartJob:FireServer()end)
-local toast=text(UDim2.fromOffset(600,70),UDim2.new(.5,-300,1,-100),"",gui);toast.Visible=false
+local jobButton=button(59,"🧹 Работа — $100",function()
+ if player:GetAttribute("InJob") then EndJob:FireServer() else StartJob:FireServer() end
+end)
+
+local toast=label(UDim2.new(.8,0,0,70),UDim2.new(.1,0,1,-90),"",gui);toast.Visible=false;toast.TextWrapped=true
 local toastToken=0
 Notify.OnClientEvent:Connect(function(msg)
  toastToken+=1;local id=toastToken;toast.Text=msg;toast.Visible=true
- task.delay(3,function()if id==toastToken then toast.Visible=false end end)
+ task.delay(3.5,function()if id==toastToken then toast.Visible=false end end)
 end)
 
 local function update()
  local s=player:GetAttribute("RoundSeconds")
  if s==nil then timer.Text="⏳ Загрузка..." elseif s<0 then timer.Text="🧹 РАБОТА — ТАЙМЕР ПАУЗА" else timer.Text=string.format("⏱️ %02d:%02d",math.floor(s/60),s%60) end
- local m=player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Money")
+ local ls=player:FindFirstChild("leaderstats");local m=ls and ls:FindFirstChild("Money")
  if m then money.Text="💰 $"..m.Value end
- secrets.Text="🔐 "..tostring(player:GetAttribute("SecretsFound") or 0).." / 100"
- if player:GetAttribute("InJob") then jobButton.Text="🛑 Закончить смену" else jobButton.Text="🧹 Работа — $100" end
+ local n=player:GetAttribute("SecretsFound") or 0
+ secrets.Text="🔐 "..n.." / 100"
+ jobButton.Text=player:GetAttribute("InJob") and "🛑 Закончить смену" or "🧹 Работа — $100"
+ if n>=10 then objectiveText.Text="🏆 Цель: открыть MASTER EXPLORER" elseif n>0 then objectiveText.Text="🎯 Цель: найди следующий секрет" end
 end
-local m=player:WaitForChild("leaderstats"):WaitForChild("Money");m:GetPropertyChangedSignal("Value"):Connect(update)
-player:GetAttributeChangedSignal("RoundSeconds"):Connect(update);player:GetAttributeChangedSignal("SecretsFound"):Connect(update);player:GetAttributeChangedSignal("InJob"):Connect(function()
- if player:GetAttribute("InJob") then jobButton.Text="🛑 Закончить смену" else jobButton.Text="🧹 Работа — $100" end
-end)
-jobButton.Activated:Connect(function()if player:GetAttribute("InJob") then EndJob:FireServer() end end)
+local ls=player:WaitForChild("leaderstats",20)
+if ls and ls:FindFirstChild("Money") then ls.Money:GetPropertyChangedSignal("Value"):Connect(update) end
+for _,a in ipairs({"RoundSeconds","SecretsFound","InJob"}) do player:GetAttributeChangedSignal(a):Connect(update) end
 update()
