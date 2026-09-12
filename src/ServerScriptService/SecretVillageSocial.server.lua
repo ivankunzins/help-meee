@@ -1,54 +1,30 @@
--- SECRET VILLAGE social/progression layer.
--- Badges/leaderboards are intentionally represented as stats first; IDs can be assigned later.
-
+-- SECRET VILLAGE SOCIAL v2
+-- Non-authoritative progression mirror. Core/DataStores remain authoritative.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Notify=ReplicatedStorage:WaitForChild("SecretVillageRemotes"):WaitForChild("Notify")
-
 local function setup(p)
- local folder=p:FindFirstChild("Progress") or Instance.new("Folder");folder.Name="Progress";folder.Parent=p
- local play=folder:FindFirstChild("Rounds") or Instance.new("IntValue");play.Name="Rounds";play.Parent=folder
- local found=folder:FindFirstChild("Secrets") or Instance.new("IntValue");found.Name="Secrets";found.Parent=folder
- local jobs=folder:FindFirstChild("Jobs") or Instance.new("IntValue");jobs.Name="Jobs";jobs.Parent=folder
- local distance=folder:FindFirstChild("Distance") or Instance.new("NumberValue");distance.Name="Distance";distance.Parent=folder
+ local f=p:FindFirstChild("Progress")or Instance.new("Folder");f.Name="Progress";f.Parent=p
+ local function iv(n)
+  local x=f:FindFirstChild(n)or Instance.new("IntValue");x.Name=n;x.Parent=f;return x
+ end
+ local dist=f:FindFirstChild("Distance")or Instance.new("NumberValue");dist.Name="Distance";dist.Parent=f
+ return f,iv("Rounds"),iv("Secrets"),iv("Jobs"),dist
 end
-
+local function sync(p)
+ local f,r,s,j,d=setup(p)
+ r.Value=p:GetAttribute("Rounds")or 0;s.Value=p:GetAttribute("SecretsFound")or 0;j.Value=p:GetAttribute("JobsCompleted")or 0;d.Value=p:GetAttribute("LifetimeDistance")or 0
+end
 Players.PlayerAdded:Connect(function(p)
  setup(p)
+ for _,a in ipairs({"Rounds","SecretsFound","JobsCompleted","LifetimeDistance"})do p:GetAttributeChangedSignal(a):Connect(function()sync(p)end)end
  p.CharacterAdded:Connect(function(c)
-  local root=c:WaitForChild("HumanoidRootPart",10)
-  if not root then return end
-  local last=root.Position
+  local hrp=c:WaitForChild("HumanoidRootPart",10);if not hrp then return end
+  local last=hrp.Position
   task.spawn(function()
-   while c.Parent and p.Parent do
-    task.wait(2)
-    if root.Parent then
-     local now=root.Position
-     local d=(now-last).Magnitude
-     if d<80 then
-      p.Progress.Distance.Value+=d
-     end
-     last=now
-    end
-   end
+   while c.Parent and p.Parent do task.wait(2);if hrp.Parent then local now=hrp.Position;local delta=(now-last).Magnitude;if delta<80 then local total=(p:GetAttribute("LifetimeDistance")or 0)+delta;p:SetAttribute("LifetimeDistance",total)end;last=now end end
   end)
  end)
+ task.defer(sync,p)
 end)
-
--- Lightweight milestone rewards.
-task.spawn(function()
- while true do
-  task.wait(5)
-  for _,p in ipairs(Players:GetPlayers()) do
-   setup(p)
-   local s=p:GetAttribute("SecretsFound") or 0
-   p.Progress.Secrets.Value=s
-   if s>=10 and not p:GetAttribute("MasterExplorer") then
-    p:SetAttribute("MasterExplorer",true)
-    local ls=p:FindFirstChild("leaderstats");local m=ls and ls:FindFirstChild("Money")
-    if m then m.Value+=5000 end
-    Notify:FireClient(p,"🏆 ДОСТИЖЕНИЕ: MASTER EXPLORER! +$5000")
-   end
-  end
- end
-end)
+task.spawn(function()while true do task.wait(5);for _,p in ipairs(Players:GetPlayers())do sync(p);if (p:GetAttribute("SecretsFound")or 0)>=10 and not p:GetAttribute("MasterExplorer")then p:SetAttribute("MasterExplorer",true);local m=p:FindFirstChild("leaderstats")and p.leaderstats:FindFirstChild("Money");if m then m.Value+=5000 end;Notify:FireClient(p,"🏆 MASTER EXPLORER! +$5000")end end end end)
