@@ -1,11 +1,12 @@
--- SECRET VILLAGE HTTP INSTALLER v2
--- Run in Roblox Studio Command Bar.
--- File source: https://github.com/ivankunzins/help-meee
+-- SECRET VILLAGE HTTP INSTALLER v3
+-- Run this entire script from Roblox Studio Command Bar.
+-- Uses GitHub API instead of raw.githubusercontent.com.
 
 local HttpService = game:GetService("HttpService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
 
-local BASE = "https://raw.githubusercontent.com/ivankunzins/help-meee/main/"
+local API = "https://api.github.com/repos/ivankunzins/help-meee/contents/"
+local REF = "?ref=main"
 
 local files = {
     {path="src/ReplicatedStorage/SecretVillage/Config.lua", className="ModuleScript"},
@@ -39,67 +40,78 @@ local files = {
     {path="src/StarterPlayer/StarterPlayerScripts/SecretVillage.client.lua", className="LocalScript"},
 }
 
-local function getDestination(path)
-    if path:find("src/ReplicatedStorage/SecretVillage/", 1, true) then
-        local rs = game:GetService("ReplicatedStorage")
-        local folder = rs:FindFirstChild("SecretVillage")
-        if not folder then
-            folder = Instance.new("Folder")
-            folder.Name = "SecretVillage"
-            folder.Parent = rs
-        end
-        return folder
-    elseif path:find("src/StarterPlayer/StarterPlayerScripts/", 1, true) then
+local function getFolder(parent, name)
+    local f = parent:FindFirstChild(name)
+    if not f then
+        f = Instance.new("Folder")
+        f.Name = name
+        f.Parent = parent
+    end
+    return f
+end
+
+local function destination(item)
+    if item.path:find("src/ReplicatedStorage/SecretVillage/", 1, true) then
+        return getFolder(game:GetService("ReplicatedStorage"), "SecretVillage")
+    elseif item.path:find("src/StarterPlayer/StarterPlayerScripts/", 1, true) then
         return game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
     end
     return game:GetService("ServerScriptService")
 end
 
-local function cleanName(path)
-    local name = path:match("([^/]+)$")
-    return name:gsub("%.server%.lua$", ""):gsub("%.client%.lua$", ""):gsub("%.lua$", "")
+local function objectName(path)
+    return path:match("([^/]+)$")
+        :gsub("%.server%.lua$", "")
+        :gsub("%.client%.lua$", "")
+        :gsub("%.lua$", "")
+end
+
+local function decodeGitHubContent(data)
+    return HttpService:Base64Decode((data.content or ""):gsub("%s", ""))
 end
 
 print("========================================")
-print("SECRET VILLAGE HTTP INSTALLER v2")
-print("Starting: " .. #files .. " files")
+print("SECRET VILLAGE HTTP INSTALLER v3")
+print("Transport: api.github.com")
+print("Files: " .. #files)
 print("========================================")
 
 local okCount = 0
 local failCount = 0
 
 for i, item in ipairs(files) do
-    local name = cleanName(item.path)
+    local name = objectName(item.path)
     print(string.format("[%02d/%02d] GET %s", i, #files, name))
 
-    local success, sourceOrError = pcall(function()
-        return HttpService:GetAsync(BASE .. item.path, true)
+    local ok, source = pcall(function()
+        local raw = HttpService:GetAsync(API .. item.path .. REF)
+        local data = HttpService:JSONDecode(raw)
+        if not data.content then error("GitHub returned no file content") end
+        return decodeGitHubContent(data)
     end)
 
-    if not success then
+    if not ok then
         failCount += 1
-        warn(string.format("[%02d] FAILED HTTP: %s", i, tostring(sourceOrError)))
+        warn("DOWNLOAD FAILED: " .. item.path .. " | " .. tostring(source))
     else
-        local parent = getDestination(item.path)
+        local parent = destination(item)
         local existing = parent:FindFirstChild(name)
-        if existing then
-            existing:Destroy()
-        end
+        if existing then existing:Destroy() end
 
         local obj = Instance.new(item.className)
         obj.Name = name
         obj.Parent = parent
 
-        local writeOk, writeError = pcall(function()
+        local writeOk, writeErr = pcall(function()
             ScriptEditorService:UpdateSourceAsync(obj, function()
-                return sourceOrError
+                return source
             end)
         end)
 
         if not writeOk then
             obj:Destroy()
             failCount += 1
-            warn(string.format("[%02d] FAILED WRITE: %s", i, tostring(writeError)))
+            warn("WRITE FAILED: " .. item.path .. " | " .. tostring(writeErr))
         else
             okCount += 1
             print(string.format("       OK — %d%%", math.floor(i / #files * 100)))
@@ -108,11 +120,11 @@ for i, item in ipairs(files) do
 end
 
 print("========================================")
-print(string.format("SECRET VILLAGE: %d/%d FILES INSTALLED", okCount, #files))
+print(string.format("INSTALL COMPLETE: %d/%d OK", okCount, #files))
 print("FAILED: " .. failCount)
 if failCount == 0 then
-    print("INSTALL COMPLETE — press Play")
+    print("SUCCESS — press Play to test Secret Village")
 else
-    warn("INSTALL FINISHED WITH ERRORS — see messages above")
+    warn("INSTALL INCOMPLETE — check errors above")
 end
 print("========================================")
