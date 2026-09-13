@@ -1,15 +1,60 @@
--- SECRET VILLAGE HTTP INSTALLER v26
+-- SECRET VILLAGE CLEAN INSTALLER v27
+-- Installs gameplay once and exactly one authoritative world layer.
 local HttpService=game:GetService("HttpService")
 local ScriptEditorService=game:GetService("ScriptEditorService")
-local BASE="https://cdn.jsdelivr.net/gh/ivankunzins/help-meee@main/"
-local CACHE_BUSTER="?install=26"
+local SSS=game:GetService("ServerScriptService")
+local RS=game:GetService("ReplicatedStorage")
+local SPS=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+local WS=game:GetService("Workspace")
+local BASE="https://raw.githubusercontent.com/ivankunzins/help-meee/main/"
+local CACHE="?install=27"
+
+-- Old visual scripts that caused the "layer on layer" problem.
+local legacy={
+ "SecretVillageWorld","SecretVillageVillageLife","SecretVillageRuralDetail","SecretVillageGraphics","SecretVillageEnvironmentArt",
+ "SecretVillageGraphicsArchitecture","SecretVillageGraphicsCinematic","SecretVillageGraphicsOverhaul","SecretVillageGraphicsOverhaul2",
+ "SecretVillageHeroAssets","SecretVillageHeroProps","SecretVillageInteriorsAndNight","SecretVillageFinalArt","SecretVillageArchitectureFinal",
+ "SecretVillageVisualWorld2","SecretVillageWorldFinal","SecretVillageFinalWorldMaster","SecretVillageVisualMaster",
+ "SecretVillageVisualPresentationFinal","SecretVillagePresentationRecovery","SecretVillageFinalTerrainCleanup","SecretVillageForestBearsFinal"
+}
+for _,n in ipairs(legacy) do local x=SSS:FindFirstChild(n);if x then x:Destroy()end end
+
+-- Remove old generated world folders, but NEVER touch SECRET_DISCOVERIES or gameplay NPC/job folders.
+local oldWorld={"SECRET_VILLAGE_LIFE","FINAL_ART_PASS","SECRET_VILLAGE_WORLD_FINAL","SECRET_VILLAGE_FINAL_MASTER","GRAPHICS_OVERHAUL","GRAPHICS_OVERHAUL_V2","GRAPHICS_CINEMATIC","GRAPHICS_HERO_PROPS","GRAPHICS_HERO_ASSETS","ARCHITECTURE_FINAL","VISUAL_WORLD_V2","WORLD_FINAL","VISUAL_MASTER","VISUAL_PRESENTATION_FINAL","SECRET_VILLAGE_RURAL_DETAIL","SECRET_VILLAGE_PRESENTATION_RECOVERY","TerrainFinish","ArchitectureFinish","VillageSquareFinish","RiverFinish","FarmFinish","FOREST_PERIMETER","FOREST_FLOOR","DANGEROUS_BEAR_ZONE"}
+for _,n in ipairs(oldWorld) do local x=WS:FindFirstChild(n);if x then x:Destroy()end end
+
 local files={
-{path="src/ReplicatedStorage/SecretVillage/Config.lua",className="ModuleScript"},{path="src/ReplicatedStorage/SecretVillage/ShopConfig.lua",className="ModuleScript"},{path="src/ServerScriptService/SecretVillageCore.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageSecrets.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageSecretPersistence.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageSecretChain.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageWorld.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageItems.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageJobs.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageShop.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageOwnership.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageInventory.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageSocial.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageQuests.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageProgression.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageAchievements.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageDailyV2.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageVehicles.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageCoop.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageGraphics.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageEnvironmentArt.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageGraphicsArchitecture.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageGraphicsCinematic.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageGraphicsOverhaul.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageGraphicsOverhaul2.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageHeroAssets.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageHeroProps.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageInteriorsAndNight.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageVillageLife.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageRuralDetail.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageFinalArt.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageArchitectureFinal.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageVisualWorld2.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageWorldFinal.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageFinalWorldMaster.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageVisualMaster.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageVisualPresentationFinal.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageForestBearsFinal.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageFinalTerrainCleanup.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageSkyCycleFinal.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillagePresentationRecovery.server.lua",className="Script"},{path="src/ServerScriptService/SecretVillageBootAudit.server.lua",className="Script"},{path="src/StarterPlayer/StarterPlayerScripts/SecretVillage.client.lua",className="LocalScript"},}
-local function folder(p,n)local f=p:FindFirstChild(n);if not f then f=Instance.new("Folder");f.Name=n;f.Parent=p end;return f end
-local function destination(i)if i.path:find("src/ReplicatedStorage/SecretVillage/",1,true)then return folder(game:GetService("ReplicatedStorage"),"SecretVillage")elseif i.path:find("src/StarterPlayer/StarterPlayerScripts/",1,true)then return game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")end;return game:GetService("ServerScriptService")end
-local function objectName(path)return path:match("([^/]+)$"):gsub("%.server%.lua$",""):gsub("%.client%.lua$",""):gsub("%.lua$","") end
-local function fetchSource(path)return HttpService:GetAsync(BASE..path..CACHE_BUSTER,true)end
-print("SECRET VILLAGE HTTP INSTALLER v26 | FILES: "..#files)
+ {"src/ReplicatedStorage/SecretVillage/Config.lua","ModuleScript"},{"src/ReplicatedStorage/SecretVillage/ShopConfig.lua","ModuleScript"},
+ {"src/ServerScriptService/SecretVillageCore.server.lua","Script"},{"src/ServerScriptService/SecretVillageSecrets.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageSecretPersistence.server.lua","Script"},{"src/ServerScriptService/SecretVillageSecretChain.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageItems.server.lua","Script"},{"src/ServerScriptService/SecretVillageJobs.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageShop.server.lua","Script"},{"src/ServerScriptService/SecretVillageOwnership.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageInventory.server.lua","Script"},{"src/ServerScriptService/SecretVillageSocial.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageQuests.server.lua","Script"},{"src/ServerScriptService/SecretVillageProgression.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageAchievements.server.lua","Script"},{"src/ServerScriptService/SecretVillageDailyV2.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageVehicles.server.lua","Script"},{"src/ServerScriptService/SecretVillageCoop.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageUnifiedWorld.server.lua","Script"},{"src/ServerScriptService/SecretVillageSkyCycleFinal.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageBootAudit.server.lua","Script"},{"src/StarterPlayer/StarterPlayerScripts/SecretVillage.client.lua","LocalScript"}
+}
+local function parentFor(path)
+ if path:find("src/ReplicatedStorage/SecretVillage/",1,true) then return RS:FindFirstChild("SecretVillage") or Instance.new("Folder",RS) end
+ if path:find("src/StarterPlayer/StarterPlayerScripts/",1,true) then return SPS end
+ return SSS
+end
+local function objName(path)return path:match("([^/]+)$"):gsub("%.server%.lua$",""):gsub("%.client%.lua$",""):gsub("%.lua$","")end
+local sec=RS:FindFirstChild("SecretVillage") or Instance.new("Folder");sec.Name="SecretVillage";sec.Parent=RS
+print("SECRET VILLAGE CLEAN INSTALLER v27 | FILES: "..#files)
 local okCount,failCount=0,0
-for i,item in ipairs(files)do local name=objectName(item.path);local ok,source=pcall(function()return fetchSource(item.path)end);if not ok then failCount+=1;warn("DOWNLOAD FAILED: "..item.path.." | "..tostring(source))else local parent=destination(item);local existing=parent:FindFirstChild(name);if existing then existing:Destroy()end;local obj=Instance.new(item.className);obj.Name=name;obj.Parent=parent;local w,e=pcall(function()ScriptEditorService:UpdateSourceAsync(obj,function()return source end)end);if not w then obj:Destroy();failCount+=1;warn("WRITE FAILED: "..item.path.." | "..tostring(e))else okCount+=1;print(string.format("[%02d/%02d] OK",i,#files))end end end
-print(string.format("INSTALL COMPLETE: %d/%d OK",okCount,#files));print("FAILED: "..failCount);if failCount==0 then print("SUCCESS — press Play, then check BOOT AUDIT") end
+for i,item in ipairs(files) do
+ local path,className=item[1],item[2];local name=objName(path)
+ local ok,source=pcall(function()return HttpService:GetAsync(BASE..path..CACHE,true)end)
+ if not ok then failCount+=1;warn("DOWNLOAD FAILED: "..path.." | "..tostring(source))
+ else
+  local parent=parentFor(path);local old=parent:FindFirstChild(name);if old then old:Destroy()end
+  local obj=Instance.new(className);obj.Name=name;obj.Parent=parent
+  local wrote,err=pcall(function()ScriptEditorService:UpdateSourceAsync(obj,function()return source end)end)
+  if not wrote then obj:Destroy();failCount+=1;warn("WRITE FAILED: "..path.." | "..tostring(err)) else okCount+=1;print(string.format("[%02d/%02d] OK",i,#files))end
+ end
+end
+print(string.format("INSTALL COMPLETE: %d/%d OK",okCount,#files));print("FAILED: "..failCount)
+if failCount==0 then print("SUCCESS — ONE WORLD LAYER. Press Play and wait 10 seconds.")end
