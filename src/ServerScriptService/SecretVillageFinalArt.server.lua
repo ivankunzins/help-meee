@@ -1,197 +1,232 @@
--- SECRET VILLAGE FINAL ART v1
--- Global visual cleanup: cohesive rural village, natural materials, terrain dressing,
--- architectural finishing, farms, river edges, props, and lighting.
--- Intentionally avoids the previous "random Parts everywhere" look.
+-- SECRET VILLAGE FINAL ART v2
+-- Cohesive global art pass. Runs after the procedural village has been created.
 
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
+local Players=game:GetService("Players")
+local Workspace=game:GetService("Workspace")
+local Lighting=game:GetService("Lighting")
 
-if Workspace:FindFirstChild("FINAL_ART_PASS") then return end
-local ROOT = Instance.new("Folder")
-ROOT.Name = "FINAL_ART_PASS"
-ROOT.Parent = Workspace
+task.wait(3)
+local old=Workspace:FindFirstChild("FINAL_ART_PASS")
+if old then old:Destroy() end
+local ROOT=Instance.new("Folder")
+ROOT.Name="FINAL_ART_PASS"
+ROOT.Parent=Workspace
 
-local function part(name, size, cf, material, color, parent, shape)
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cf
-	p.Anchored = true
-	p.CanCollide = true
-	p.Material = material or Enum.Material.Wood
-	p.Color = color or Color3.fromRGB(110,90,65)
-	if shape then p.Shape = shape end
-	p.Parent = parent or ROOT
-	return p
+local function P(n,s,cf,m,c,par,shape)
+ local p=Instance.new("Part");p.Name=n;p.Size=s;p.CFrame=cf;p.Anchored=true;p.Material=m or Enum.Material.Wood;p.Color=c or Color3.fromRGB(110,90,65);p.Parent=par or ROOT
+ if shape then p.Shape=shape end
+ return p
+end
+local function ball(n,s,pos,m,c,par)
+ local p=P(n,s,CFrame.new(pos),m,c,par,Enum.PartType.Ball);p.CanCollide=false;return p
+end
+local function cyl(n,r,h,pos,m,c,par)
+ return P(n,Vector3.new(r*2,h,r*2),CFrame.new(pos),m,c,par,Enum.PartType.Cylinder)
+end
+local function lightAt(p,range,brightness,color)
+ local l=Instance.new("PointLight");l.Range=range;l.Brightness=brightness;l.Color=color;l.Shadows=true;l.Parent=p;return l
 end
 
-local function ball(name, size, pos, material, color, parent)
-	return part(name,size,CFrame.new(pos),material,color,parent,Enum.PartType.Ball)
+-- --------------------------------------------------------------------------
+-- 1. Ground: replace old asphalt/flat-road feeling with layered rural paths.
+-- --------------------------------------------------------------------------
+for _,o in ipairs(Workspace:GetDescendants()) do
+ if o:IsA("BasePart") and (o.Name=="MainRoad" or o.Name=="CrossRoad") then
+  o.Material=Enum.Material.Ground;o.Color=Color3.fromRGB(117,99,72);o.Transparency=0;o.CanCollide=true
+ end
+end
+local ground=Instance.new("Folder");ground.Name="TerrainFinish";ground.Parent=ROOT
+math.randomseed(140926)
+for i=1,100 do
+ local x=math.random(-145,145);local z=math.random(-125,135)
+ local sx=math.random(5,12);local sz=math.random(4,9)
+ local p=P("GrassPatch",Vector3.new(sx,.16,sz),CFrame.new(x,.22,z)*CFrame.Angles(0,math.random()*6.28,0),Enum.Material.Grass,Color3.fromRGB(math.random(70,92),math.random(94,120),math.random(52,75)),ground);p.CanCollide=false
 end
 
-local function cyl(name, radius, height, pos, material, color, parent)
-	return part(name,Vector3.new(radius*2,height,radius*2),CFrame.new(pos),material,color,parent,Enum.PartType.Cylinder)
+-- Roadside ruts and stones make the dirt paths read as used paths.
+local paths=Instance.new("Folder");paths.Name="RoadsideDetail";paths.Parent=ROOT
+for _,z in ipairs({-85,-55,25,105}) do
+ for side=-1,1,2 do
+  for i=1,9 do
+   local x=15+(i-5)*11
+   ball("PathStone",Vector3.new(math.random(18,34)/10,math.random(8,16)/10,math.random(12,28)/10),Vector3.new(x,.38,z+side*(4+math.random(0,3))),Enum.Material.Slate,Color3.fromRGB(105,103,94),paths)
+  end
+ end
 end
 
-local function trimHouse(model, accent)
-	if not model or not model:IsA("Model") then return end
-	local cf,size = model:GetBoundingBox()
-	local x,z = cf.Position.X,cf.Position.Z
-	local sx,sy,sz = size.X,size.Y,size.Z
-	local folder = Instance.new("Folder")
-	folder.Name = "FinalFacade"
-	folder.Parent = ROOT
-
-	-- foundation
-	part("Foundation",Vector3.new(sx+1.4,.45,sz+1.4),CFrame.new(x,cf.Position.Y-sy/2-.1,z),Enum.Material.Slate,Color3.fromRGB(72,73,68),folder)
-	-- porch
-	part("Porch",Vector3.new(math.min(sx*.72,12),.35,2.8),CFrame.new(x,cf.Position.Y-sy/2+.25,z-sz/2-1.2),Enum.Material.WoodPlanks,Color3.fromRGB(112,82,55),folder)
-	for dx=-1.8,1.8,3.6 do
-		part("PorchPost",Vector3.new(.25,2.5,.25),CFrame.new(x+dx,cf.Position.Y-sy/2+1.45,z-sz/2-2),Enum.Material.Wood,Color3.fromRGB(92,67,47),folder)
-	end
-	-- roof ridge + fascia
-	part("RoofRidge",Vector3.new(sx+1,.3,.45),CFrame.new(x,cf.Position.Y+sy/2+.15,z),Enum.Material.Wood,Color3.fromRGB(64,55,48),folder)
-	-- door
-	part("Door",Vector3.new(2.1,3.2,.18),CFrame.new(x,cf.Position.Y-sy/2+1.65,z-sz/2-.12),Enum.Material.Wood,accent,folder)
-	-- door knob
-	ball("Knob",Vector3.new(.12,.12,.12),Vector3.new(x+.68,cf.Position.Y-sy/2+1.65,z-sz/2-.25),Enum.Material.Metal,Color3.fromRGB(210,178,105),folder)
-	-- flower boxes / windows
-	for dx=-math.min(sx*.3,4),math.min(sx*.3,4),math.max(3.2,sx*.45) do
-		part("Window",Vector3.new(2.2,1.55,.12),CFrame.new(x+dx,cf.Position.Y+.45,z-sz/2-.08),Enum.Material.Glass,Color3.fromRGB(154,190,194),folder)
-		part("WindowSill",Vector3.new(2.55,.16,.4),CFrame.new(x+dx,cf.Position.Y-.38,z-sz/2-.25),Enum.Material.Wood,Color3.fromRGB(90,65,47),folder)
-		for fx=-.7,.7,1.4 do
-			ball("Flower",Vector3.new(.25,.18,.25),Vector3.new(x+dx+fx,cf.Position.Y-.23,z-sz/2-.48),Enum.Material.Grass,Color3.fromRGB(88,118,62),folder)
-		end
-	end
+-- --------------------------------------------------------------------------
+-- 2. Houses: apply one complete architectural language to every generated home.
+-- --------------------------------------------------------------------------
+local buildings=Instance.new("Folder");buildings.Name="ArchitectureFinish";buildings.Parent=ROOT
+local function finishHouse(model,accent)
+ if not model or not model:IsA("Model") then return end
+ local cf,size=model:GetBoundingBox();local x,z=cf.Position.X,cf.Position.Z;local sx,sy,sz=size.X,size.Y,size.Z
+ local f=Instance.new("Folder");f.Name="FacadeFinish";f.Parent=buildings
+ P("Foundation",Vector3.new(sx+1,.45,sz+1),CFrame.new(x,cf.Position.Y-sy/2-.15,z),Enum.Material.Slate,Color3.fromRGB(69,69,65),f)
+ P("Porch",Vector3.new(math.min(12,sx*.72),.3,2.6),CFrame.new(x,cf.Position.Y-sy/2+.12,z-sz/2-1.25),Enum.Material.WoodPlanks,Color3.fromRGB(117,84,54),f)
+ for dx=-1.8,1.8,3.6 do
+  P("Post",Vector3.new(.22,2.7,.22),CFrame.new(x+dx,cf.Position.Y-sy/2+1.35,z-sz/2-2),Enum.Material.Wood,Color3.fromRGB(83,61,44),f)
+ end
+ P("Door",Vector3.new(2.1,3.5,.18),CFrame.new(x,cf.Position.Y-sy/2+1.75,z-sz/2-.16),Enum.Material.Wood,accent,f)
+ local knob=ball("Knob",Vector3.new(.16,.16,.16),Vector3.new(x+.68,cf.Position.Y-sy/2+1.8,z-sz/2-.28),Enum.Material.Metal,Color3.fromRGB(211,177,101),f);knob.CanCollide=false
+ for _,dx in ipairs({-sx*.27,sx*.27}) do
+  local w=P("Window",Vector3.new(2.5,1.65,.12),CFrame.new(x+dx,cf.Position.Y+.55,z-sz/2-.12),Enum.Material.Glass,Color3.fromRGB(148,190,198),f);w.CanCollide=false
+  for _,off in ipairs({-.75,.75}) do P("Mullion",Vector3.new(.08,1.55,.14),CFrame.new(x+dx+off,cf.Position.Y+.55,z-sz/2-.2),Enum.Material.Wood,Color3.fromRGB(73,61,50),f) end
+  P("Sill",Vector3.new(2.8,.15,.4),CFrame.new(x+dx,cf.Position.Y-.32,z-sz/2-.25),Enum.Material.Wood,Color3.fromRGB(91,66,45),f)
+  for k=-1,1 do ball("Flower",Vector3.new(.25,.18,.25),Vector3.new(x+dx+k*.55,cf.Position.Y-.18,z-sz/2-.45),Enum.Material.Grass,Color3.fromRGB(67,105,54),f) end
+ end
+ -- roofline, gutter and chimney
+ P("RoofRidge",Vector3.new(sx+1,.3,.38),CFrame.new(x,cf.Position.Y+sy/2+.2,z),Enum.Material.Wood,Color3.fromRGB(57,50,45),f)
+ P("Gutter",Vector3.new(sx+1,.16,.16),CFrame.new(x,cf.Position.Y+sy/2-.15,z-sz/2-.2),Enum.Material.Metal,Color3.fromRGB(67,68,65),f)
+ P("Downpipe",Vector3.new(.13,3.5,.13),CFrame.new(x+sx*.4,cf.Position.Y+sy/2-1.7,z-sz/2-.2),Enum.Material.Metal,Color3.fromRGB(67,68,65),f)
+ P("Chimney",Vector3.new(1.5,3.3,1.5),CFrame.new(x+sx*.28,cf.Position.Y+sy/2+1.4,z+sz*.15),Enum.Material.Brick,Color3.fromRGB(116,75,58),f)
+ local lamp=P("PorchLamp",Vector3.new(.3,.3,.3),CFrame.new(x+2.1,cf.Position.Y-sy/2+3.0,z-sz/2-.25),Enum.Material.Neon,Color3.fromRGB(255,208,137),f);lamp.CanCollide=false;lightAt(lamp,10,.55,Color3.fromRGB(255,208,150))
 end
 
--- Convert the old broad roads into believable rural paths rather than asphalt strips.
-for _,obj in ipairs(Workspace:GetDescendants()) do
-	if obj:IsA("BasePart") and (obj.Name=="MainRoad" or obj.Name=="CrossRoad") then
-		obj.Material = Enum.Material.Ground
-		obj.Color = Color3.fromRGB(117,101,75)
-		obj.Transparency = 0
-		obj.CastShadow = true
-	end
+for _,o in ipairs(Workspace:GetDescendants()) do
+ if o:IsA("Model") and o:IsDescendantOf(Workspace) then
+  local n=o.Name
+  if n=="Village House" or n=="VillageGeneralStore" or n=="FarmShop" or n=="Bakery" or n=="Village Shop" or n=="Old House" or n=="Garage" or n=="Forest Cabin" then
+   finishHouse(o, n:find("Shop") and Color3.fromRGB(112,73,50) or Color3.fromRGB(126,86,61))
+  end
+ end
 end
 
--- Layered dirt shoulders and irregular grass islands.
-local ground = Instance.new("Folder")
-ground.Name = "NaturalGround"
-ground.Parent = ROOT
-math.randomseed(90417)
-for i=1,85 do
-	local x = math.random(-145,145)
-	local z = math.random(-125,135)
-	local s = math.random(5,13)
-	local p = part("GrassIsland",Vector3.new(s,.18,math.random(4,10)),CFrame.new(x,.18,z)*CFrame.Angles(0,math.random()*math.pi,0),Enum.Material.Grass,Color3.fromRGB(79+math.random(0,18),105+math.random(0,18),61+math.random(0,12)),ground)
-	p.CanCollide=false
+-- --------------------------------------------------------------------------
+-- 3. Village square: a deliberate focal area, not an empty patch.
+-- --------------------------------------------------------------------------
+local square=Instance.new("Folder");square.Name="VillageSquareFinish";square.Parent=ROOT
+local ring=cyl("StoneRing",10,.25,Vector3.new(25,.28,-45),Enum.Material.Slate,Color3.fromRGB(119,116,106),square);ring.CanCollide=false
+for i=1,14 do
+ local a=i*math.pi*2/14;local x=25+math.cos(a)*8.5;local z=-45+math.sin(a)*8.5
+ ball("Shrub",Vector3.new(2.2,1.7,2.2),Vector3.new(x,1.05,z),Enum.Material.Grass,Color3.fromRGB(57,90,48),square)
+end
+for _,v in ipairs({Vector3.new(15,.4,-53),Vector3.new(35,.4,-53),Vector3.new(15,.4,-37),Vector3.new(35,.4,-37)}) do
+ P("BenchSeat",Vector3.new(3,.25,.65),CFrame.new(v),Enum.Material.Wood,Color3.fromRGB(107,76,49),square)
+ P("BenchBack",Vector3.new(3,1,.18),CFrame.new(v+Vector3.new(0,.65,.25)),Enum.Material.Wood,Color3.fromRGB(107,76,49),square)
 end
 
--- Farm plots: coherent rectangles with rows, rather than isolated props.
-local farms = Instance.new("Folder")
-farms.Name = "FarmLandscapes"
-farms.Parent = ROOT
-local function farm(cx,cz,w,d)
-	part("Soil",Vector3.new(w,.16,d),CFrame.new(cx,.12,cz),Enum.Material.Ground,Color3.fromRGB(91,70,47),farms)
-	for x=-w/2+2, w/2-2, 3 do
-		for z=-d/2+2,d/2-2,3 do
-			local h=math.random(1,2)/2
-			ball("Crop",Vector3.new(.35,.7+h,.35),Vector3.new(cx+x,.55+h/2,cz+z),Enum.Material.Grass,Color3.fromRGB(61,105,52),farms)
-		end
-	end
-	for x=-w/2,w/2,4 do
-		part("Fence",Vector3.new(.18,1.2,.18),CFrame.new(cx+x,.7,cz-d/2),Enum.Material.Wood,Color3.fromRGB(104,76,49),farms)
-		part("Fence",Vector3.new(.18,1.2,.18),CFrame.new(cx+x,.7,cz+d/2),Enum.Material.Wood,Color3.fromRGB(104,76,49),farms)
-	end
+-- --------------------------------------------------------------------------
+-- 4. River: natural edge, reeds, driftwood and shallow shoreline stones.
+-- --------------------------------------------------------------------------
+local river=Instance.new("Folder");river.Name="RiverFinish";river.Parent=ROOT
+for i=1,70 do
+ local z=-8+i*3.5;local side=i%2==0 and -1 or 1;local x=side*(27+math.random(-7,7))
+ local r=math.random(7,22)/10
+ ball("ShoreRock",Vector3.new(r*1.7,r,r*.8),Vector3.new(x,1,z),Enum.Material.Slate,Color3.fromRGB(99,104,99),river)
+ if i%2==0 then
+  for j=1,4 do
+   local reed=P("Reed",Vector3.new(.1,math.random(20,38)/10,.1),CFrame.new(x+math.random(-2,2),1,z+math.random(-2,2))*CFrame.Angles(math.rad(math.random(-10,10)),0,math.rad(math.random(-10,10))),Enum.Material.Grass,Color3.fromRGB(65,101,56),river);reed.CanCollide=false
+  end
+ end
 end
-farm(-100,-82,34,25)
-farm(116,-55,28,22)
-farm(-120,55,25,19)
-
--- Rustic hay stacks.
-local hay = Instance.new("Folder")
-hay.Name="HayAndStorage"
-hay.Parent=ROOT
-for _,v in ipairs({{-88,-91},{-81,-91},{112,-65},{119,-65},{-113,66}}) do
-	cyl("HayBale",1.15,1.8,Vector3.new(v[1],1,v[2]),Enum.Material.Fabric,Color3.fromRGB(181,151,77),hay)
+for _,v in ipairs({{-38,1,32},{-33,1,40},{-30,1,47}}) do
+ local log=cyl("Driftwood",.45,4,Vector3.new(v[1],v[2],v[3]),Enum.Material.Wood,Color3.fromRGB(91,65,44),river);log.CFrame=log.CFrame*CFrame.Angles(0,math.rad(35),math.rad(72))
 end
 
--- River edge treatment.
-local river = Instance.new("Folder")
-river.Name="RiverBanksFinal"
-river.Parent=ROOT
-for i=1,55 do
-	local z=-5+i*4.1
-	local side=(i%2==0) and -1 or 1
-	local x=side*(28+math.random(-7,7))
-	local r=math.random(1,3)
-	ball("BankRock",Vector3.new(r*1.5,r,r),Vector3.new(x,1,z+math.random(-2,2)),Enum.Material.Slate,Color3.fromRGB(101,105,99),river)
-	if i%3==0 then
-		for j=1,3 do
-			part("Reed",Vector3.new(.12,math.random(2,4),.12),CFrame.new(x+math.random(-2,2),1,z+math.random(-2,2))*CFrame.Angles(math.rad(math.random(-12,12)),0,math.rad(math.random(-8,8))),Enum.Material.Grass,Color3.fromRGB(71,103,58),river)
-		end
-	end
+-- --------------------------------------------------------------------------
+-- 5. Farms: readable rows, fences, hay and working-yard composition.
+-- --------------------------------------------------------------------------
+local farm=Instance.new("Folder");farm.Name="FarmFinish";farm.Parent=ROOT
+local function farmPlot(cx,cz,w,d)
+ P("SoilPlot",Vector3.new(w,.15,d),CFrame.new(cx,.12,cz),Enum.Material.Ground,Color3.fromRGB(89,69,46),farm)
+ for x=-w/2+2,w/2-2,3 do
+  P("CropRow",Vector3.new(.35,.55,d-3),CFrame.new(cx+x,.48,cz),Enum.Material.Grass,Color3.fromRGB(57,99,50),farm)
+ end
+ for x=-w/2,w/2,4 do
+  P("FencePost",Vector3.new(.18,1.25,.18),CFrame.new(cx+x,.7,cz-d/2),Enum.Material.Wood,Color3.fromRGB(101,73,47),farm)
+  P("FencePost",Vector3.new(.18,1.25,.18),CFrame.new(cx+x,.7,cz+d/2),Enum.Material.Wood,Color3.fromRGB(101,73,47),farm)
+ end
+ P("Rail",Vector3.new(w, .16,.16),CFrame.new(cx,.85,cz-d/2),Enum.Material.Wood,Color3.fromRGB(101,73,47),farm)
+ P("Rail",Vector3.new(w, .16,.16),CFrame.new(cx,.85,cz+d/2),Enum.Material.Wood,Color3.fromRGB(101,73,47),farm)
+end
+farmPlot(-100,-82,34,25);farmPlot(116,-55,28,22);farmPlot(-120,55,25,19)
+for _,v in ipairs({{-90,-96},{-84,-96},{110,-68},{117,-68},{-114,67}}) do cyl("HayBale",1.15,1.8,Vector3.new(v[1],1,v[2]),Enum.Material.Fabric,Color3.fromRGB(181,151,77),farm) end
+
+-- --------------------------------------------------------------------------
+-- 6. NPCs: replace the primitive mannequins with real Roblox humanoid rigs.
+-- --------------------------------------------------------------------------
+local npcNames={"Marta","Anton","Nina","Oleg","Lena","Max","Vera","Roman"}
+local roles={Marta="Farmer",Anton="Carpenter",Nina="Baker",Oleg="Fisherman",Lena="Gardener",Max="Courier",Vera="Shepherd",Roman="Mechanic"}
+local npcFolder=Workspace:FindFirstChild("SECRET_VILLAGE_LIFE")
+if npcFolder then
+ for _,name in ipairs(npcNames) do
+  local oldNpc=npcFolder:FindFirstChild(name)
+  if oldNpc then
+   local pos=oldNpc:GetPivot().Position
+   oldNpc:Destroy()
+   task.spawn(function()
+    local ok,model=pcall(function()
+     local desc=Instance.new("HumanoidDescription")
+     return Players:CreateHumanoidModelFromDescriptionAsync(desc,Enum.HumanoidRigType.R15)
+    end)
+    if ok and model then
+     model.Name=name;model.Parent=npcFolder
+     model:PivotTo(CFrame.new(pos))
+     local hum=model:FindFirstChildOfClass("Humanoid")
+     if hum then hum.DisplayName=name;hum.WalkSpeed=6;hum.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.Viewer end
+     local head=model:FindFirstChild("Head")
+     if head then
+      local gui=Instance.new("BillboardGui");gui.Name="RoleLabel";gui.Size=UDim2.fromOffset(160,34);gui.StudsOffset=Vector3.new(0,2.8,0);gui.AlwaysOnTop=true;gui.Parent=head
+      local tx=Instance.new("TextLabel");tx.Size=UDim2.fromScale(1,1);tx.BackgroundTransparency=1;tx.Text=roles[name] or "Житель";tx.Font=Enum.Font.GothamBold;tx.TextScaled=true;tx.TextColor3=Color3.new(1,1,1);tx.TextStrokeTransparency=.35;tx.Parent=gui
+     end
+    end
+   end)
+  end
+ end
 end
 
--- Village square focal point: circular planting ring and seating.
-local square=Instance.new("Folder")
-square.Name="VillageSquareFinal"
-square.Parent=ROOT
-cyl("PlantingRing",10,.3,Vector3.new(25,.25,-45),Enum.Material.Slate,Color3.fromRGB(118,112,100),square)
-for i=1,12 do
-	local a=i/12*math.pi*2
-	local x=25+math.cos(a)*8.5
-	local z=-45+math.sin(a)*8.5
-	ball("Shrub",Vector3.new(2,1.6,2),Vector3.new(x,1.1,z),Enum.Material.Grass,Color3.fromRGB(58,91,50),square)
+-- --------------------------------------------------------------------------
+-- 7. Animals: add recognizable silhouettes and facial detail to existing herds.
+-- --------------------------------------------------------------------------
+local function decorateAnimal(m,species)
+ if not m:IsA("Model") then return end
+ local body=m:FindFirstChild("Body");if not body then return end
+ local f=Instance.new("Folder");f.Name="AnimalDetail";f.Parent=m
+ local p=body.Position;local sx=body.Size.X
+ if species=="Cow" then
+  for _,side in ipairs({-1,1}) do
+   ball("Eye",Vector3.new(.16,.16,.16),p+Vector3.new(sx*.48,body.Size.Y*.2,side*.7),Enum.Material.Neon,Color3.fromRGB(30,30,25),f)
+  end
+  for _,side in ipairs({-1,1}) do
+   ball("Ear",Vector3.new(.55,.25,.5),p+Vector3.new(sx*.43,body.Size.Y*.65,side*1.15),Enum.Material.SmoothPlastic,Color3.fromRGB(65,55,50),f)
+  end
+  cyl("Tail",.1,1.6,p+Vector3.new(-sx*.55,.2,0),Enum.Material.Wood,Color3.fromRGB(70,52,42),f)
+ elseif species=="Sheep" then
+  for _,off in ipairs({Vector3.new(sx*.45,.7,.45),Vector3.new(sx*.45,.7,-.45)}) do ball("Eye",Vector3.new(.13,.13,.13),p+off,Enum.Material.Neon,Color3.fromRGB(25,25,25),f) end
+  ball("WoolHead",Vector3.new(1.2,1.2,1.2),p+Vector3.new(sx*.48,.7,0),Enum.Material.Fabric,Color3.fromRGB(232,232,220),f)
+ elseif species=="Chicken" then
+  ball("Eye",Vector3.new(.12,.12,.12),p+Vector3.new(body.Size.X*.42,.35,.35),Enum.Material.Neon,Color3.fromRGB(20,20,20),f)
+  ball("Comb",Vector3.new(.22,.38,.22),p+Vector3.new(body.Size.X*.42,.75,0),Enum.Material.SmoothPlastic,Color3.fromRGB(177,55,44),f)
+ end
+end
+if npcFolder then
+ for _,m in ipairs(npcFolder:GetChildren()) do if m:IsA("Model") and (m.Name=="Cow" or m.Name=="Sheep" or m.Name=="Chicken") then decorateAnimal(m,m.Name) end end
 end
 
--- Better street lamps: warm practical lights, not floating blocks.
-local lamps=Instance.new("Folder")
-lamps.Name="FinalStreetFurniture"
-lamps.Parent=ROOT
-for _,v in ipairs({{-18, -18},{18,-18},{-18,18},{18,18},{55,-30},{82,18},{-75,20},{-70,-40},{90,-75}}) do
-	local x,z=v[1],v[2]
-	cyl("LampPost",.13,5,Vector3.new(x,2.5,z),Enum.Material.Metal,Color3.fromRGB(45,47,43),lamps)
-	part("LampArm",Vector3.new(1.5,.12,.12),CFrame.new(x+.65,5,z),Enum.Material.Metal,Color3.fromRGB(45,47,43),lamps)
-	local light=part("Lamp",Vector3.new(.35,.35,.35),CFrame.new(x+1.25,4.8,z),Enum.Material.Neon,Color3.fromRGB(255,214,142),lamps)
-	light.CanCollide=false
-	local pl=Instance.new("PointLight")
-	pl.Range=18
-	pl.Brightness=1.3
-	pl.Color=Color3.fromRGB(255,214,160)
-	pl.Parent=light
+-- --------------------------------------------------------------------------
+-- 8. Street furniture + warm practical lights.
+-- --------------------------------------------------------------------------
+local street=Instance.new("Folder");street.Name="StreetFinish";street.Parent=ROOT
+for _,v in ipairs({{-18,-18},{18,-18},{-18,18},{18,18},{55,-30},{82,18},{-75,20},{-70,-40},{90,-75}}) do
+ local x,z=v[1],v[2]
+ cyl("LampPost",.13,5,Vector3.new(x,2.5,z),Enum.Material.Metal,Color3.fromRGB(43,45,42),street)
+ P("LampArm",Vector3.new(1.5,.12,.12),CFrame.new(x+.65,5,z),Enum.Material.Metal,Color3.fromRGB(43,45,42),street)
+ local lamp=P("Lamp",Vector3.new(.38,.38,.38),CFrame.new(x+1.25,4.8,z),Enum.Material.Neon,Color3.fromRGB(255,211,142),street);lamp.CanCollide=false;lightAt(lamp,18,1.15,Color3.fromRGB(255,211,155))
 end
 
--- Finish existing major buildings with a consistent facade language.
-for _,name in ipairs({"Bakery","Village Shop","Old House","Garage","Forest Cabin","VillageGeneralStore","FarmShop"}) do
-	local m=Workspace:FindFirstChild(name)
-	if m then trimHouse(m,Color3.fromRGB(121,82,58)) end
-end
-
--- Final lighting pass.
+-- --------------------------------------------------------------------------
+-- 9. Lighting: natural daytime base with strong night readability.
+-- --------------------------------------------------------------------------
 Lighting.Technology=Enum.Technology.Future
 Lighting.GlobalShadows=true
-Lighting.Brightness=2.15
-Lighting.ClockTime=14.1
-Lighting.ExposureCompensation=.05
+Lighting.Brightness=2.1
+Lighting.ClockTime=14.15
+Lighting.ExposureCompensation=.03
 Lighting.EnvironmentDiffuseScale=.5
-Lighting.EnvironmentSpecularScale=.7
-Lighting.ShadowSoftness=.3
+Lighting.EnvironmentSpecularScale=.72
+Lighting.ShadowSoftness=.28
+local cc=Lighting:FindFirstChild("FinalNaturalColor") or Instance.new("ColorCorrectionEffect");cc.Name="FinalNaturalColor";cc.Brightness=.008;cc.Contrast=.055;cc.Saturation=.03;cc.TintColor=Color3.fromRGB(255,252,246);cc.Parent=Lighting
+local bloom=Lighting:FindFirstChild("FinalSoftBloom") or Instance.new("BloomEffect");bloom.Name="FinalSoftBloom";bloom.Intensity=.045;bloom.Size=18;bloom.Threshold=1.3;bloom.Parent=Lighting
 
-local cc=Lighting:FindFirstChild("FinalNaturalColor") or Instance.new("ColorCorrectionEffect")
-cc.Name="FinalNaturalColor"
-cc.Brightness=.01
-cc.Contrast=.055
-cc.Saturation=.035
-cc.TintColor=Color3.fromRGB(255,252,246)
-cc.Parent=Lighting
-
-local bloom=Lighting:FindFirstChild("FinalSoftBloom") or Instance.new("BloomEffect")
-bloom.Name="FinalSoftBloom"
-bloom.Intensity=.055
-bloom.Size=20
-bloom.Threshold=1.25
-bloom.Parent=Lighting
-
-print("SECRET VILLAGE: FINAL ART PASS COMPLETE")
+print("SECRET VILLAGE: FINAL ART v2 COMPLETE")
