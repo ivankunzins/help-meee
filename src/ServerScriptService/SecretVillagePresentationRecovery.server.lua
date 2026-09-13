@@ -1,11 +1,14 @@
--- SECRET VILLAGE PRESENTATION RECOVERY v3
+-- SECRET VILLAGE PRESENTATION RECOVERY v4
+-- Last visual authority: run after every world/graphics builder so the final scene wins.
 local WS=game:GetService("Workspace")
 local Lighting=game:GetService("Lighting")
 local Terrain=WS.Terrain
-task.wait(5)
+
+task.wait(12)
 local old=WS:FindFirstChild("SECRET_VILLAGE_PRESENTATION_RECOVERY")
 if old then old:Destroy() end
-local root=Instance.new("Folder");root.Name="SECRET_VILLAGE_PRESENTATION_RECOVERY";root:SetAttribute("Version",3);root.Parent=WS
+local root=Instance.new("Folder");root.Name="SECRET_VILLAGE_PRESENTATION_RECOVERY";root:SetAttribute("Version",4);root.Parent=WS
+
 local function P(n,s,pos,mat,col,par,trans)
  local p=Instance.new("Part");p.Name=n;p.Size=s;p.CFrame=CFrame.new(pos);p.Anchored=true;p.Material=mat or Enum.Material.Wood;p.Color=col or Color3.fromRGB(110,85,60);p.Transparency=trans or 0;p.Parent=par or root;return p
 end
@@ -23,7 +26,8 @@ local function house(name,x,z,w,d,wall)
  roof(m,x,z,w+1,d+1,8.7)
  P("Chimney",Vector3.new(1.5,2.8,1.5),Vector3.new(x+w*.25,9.8,z+.5),Enum.Material.Brick,Color3.fromRGB(126,77,59),m)
 end
--- Remove the tall blade-like decorative parts that cover the camera.
+
+-- Remove oversized procedural blade/foliage parts that block the camera.
 for _,o in ipairs(WS:GetDescendants()) do
  if o:IsA("BasePart") then
   local n=o.Name:lower()
@@ -31,36 +35,49 @@ for _,o in ipairs(WS:GetDescendants()) do
  end
 end
 Terrain.GrassLength=.08
--- Keep a compact village silhouette visible from spawn.
+
+-- Hide every generated vehicle road/asphalt strip. Keep only natural footpaths.
+local function road(n,mat)
+ n=n:lower()
+ return n:find("road",1,true) or n:find("street",1,true) or n:find("asphalt",1,true) or mat==Enum.Material.Asphalt
+end
+for _,o in ipairs(WS:GetDescendants()) do
+ if o:IsA("BasePart") and road(o.Name,o.Material) then o.Transparency=1;o.CanCollide=false end
+end
+
+-- Compact coherent house silhouettes; these are a fallback only and do not replace gameplay buildings.
 house("RecoveryCottageA",-45,-28,18,14,Color3.fromRGB(176,133,92))
 house("RecoveryCottageB",-8,-32,20,15,Color3.fromRGB(158,118,84))
 house("RecoveryCottageC",32,-18,18,14,Color3.fromRGB(188,146,104))
 house("RecoveryCottageD",72,8,21,16,Color3.fromRGB(165,126,91))
 house("RecoveryCottageE",-72,-58,20,15,Color3.fromRGB(180,137,96))
 house("RecoveryCottageF",18,55,18,14,Color3.fromRGB(159,120,86))
--- Visible river corridor with a safe riverbed.
-local river=WS:FindFirstChild("SECRET_VILLAGE_RIVER_RECOVERY") or Instance.new("Folder",WS);river.Name="SECRET_VILLAGE_RIVER_RECOVERY"
-if not river:GetAttribute("Built") then
- river:SetAttribute("Built",true)
- Terrain:FillBlock(CFrame.new(72,-1,45),Vector3.new(40,2,170),Enum.Material.Water)
- Terrain:FillBlock(CFrame.new(45,-1,45),Vector3.new(22,2,80),Enum.Material.Water)
- local bed=P("RiverBed",Vector3.new(40,.8,170),Vector3.new(72,-2.8,45),Enum.Material.Slate,Color3.fromRGB(64,72,67),river)
- bed.CanCollide=true
-end
--- Secret clues are hidden; only prompts from the secret system remain.
+
+-- Visible river corridor + solid bed so players never fall through the water zone.
+local river=Instance.new("Folder");river.Name="SECRET_VILLAGE_RIVER_RECOVERY";river.Parent=root
+Terrain:FillBlock(CFrame.new(72,-1,45),Vector3.new(40,2,170),Enum.Material.Water)
+Terrain:FillBlock(CFrame.new(45,-1,45),Vector3.new(22,2,80),Enum.Material.Water)
+local bed=P("RiverBed",Vector3.new(42,1,172),Vector3.new(72,-2.9,45),Enum.Material.Slate,Color3.fromRGB(64,72,67),river)
+bed.CanCollide=true
+
+-- Secrets stay genuinely hidden. Interaction prompts are untouched.
 local secret=WS:FindFirstChild("SECRET_DISCOVERIES")
-if secret then for _,o in ipairs(secret:GetDescendants()) do
- if o:IsA("BillboardGui") or o:IsA("SurfaceGui") then o:Destroy() end
- if o:IsA("BasePart") and (o.Name=="SecretMarker" or o.Name=="SecretSign" or o.Name=="SecretLabel") then o.Transparency=1;o.CanCollide=false end
-end end
--- Hide world text that exposes secret locations; do not touch the player HUD.
+if secret then
+ for _,o in ipairs(secret:GetDescendants()) do
+  if o:IsA("BillboardGui") or o:IsA("SurfaceGui") then o:Destroy() end
+  if o:IsA("BasePart") and (o.Name=="SecretMarker" or o.Name=="SecretSign" or o.Name=="SecretLabel") then o.Transparency=1;o.CanCollide=false end
+ end
+end
+
+-- Remove decorative world labels without touching player HUD or gameplay prompts.
 for _,o in ipairs(WS:GetDescendants()) do
  if o:IsA("BillboardGui") or o:IsA("SurfaceGui") then
-  local text=""
-  for _,d in ipairs(o:GetDescendants()) do if d:IsA("TextLabel") or d:IsA("TextButton") then text=text.." "..d.Text:lower() end end
-  if text:find("secret") or text:find("underwater") or text:find("diving area") or o.Name:lower()=="sign" then o:Destroy() end
+  local text="";for _,d in ipairs(o:GetDescendants()) do if d:IsA("TextLabel") or d:IsA("TextButton") then text=text.." "..d.Text:lower() end end
+  local n=o.Name:lower()
+  if text:find("secret") or text:find("underwater") or text:find("diving area") or n=="sign" then o:Destroy() end
  end
  if o:IsA("Model") and o:FindFirstChildOfClass("Humanoid") and not game.Players:GetPlayerFromCharacter(o) then o:FindFirstChildOfClass("Humanoid").DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None end
 end
+
 Lighting.GlobalShadows=true;Lighting.Brightness=2.05;Lighting.ExposureCompensation=.02
-print("SECRET VILLAGE PRESENTATION RECOVERY v3 READY: houses + river + hidden secrets")
+print("SECRET VILLAGE PRESENTATION RECOVERY v4 READY: final scene authority active")
