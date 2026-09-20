@@ -186,7 +186,10 @@ end)
 Players.PlayerAdded:Connect(initializePlayer)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(initializePlayer, player) end
 Players.PlayerRemoving:Connect(function(player)
-	initialized[player], finishing[player], promptCooldown[player], completeCooldown[player] = nil, nil, nil, nil
+	initialized[player] = nil
+	finishing[player] = nil
+	promptCooldown[player] = nil
+	completeCooldown[player] = nil
 end)
 
 print("SECRET VILLAGE QUESTS v6 READY: safe initialization + validation + no duplicate generation")
