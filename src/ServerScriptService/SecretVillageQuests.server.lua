@@ -23,60 +23,24 @@ local Complete = remotes:FindFirstChild("CompleteQuest") or Instance.new("Remote
 Complete.Name = "CompleteQuest"
 Complete.Parent = remotes
 
-local questCompleted = ReplicatedStorage:FindFirstChild("SecretVillageQuestCompleted")
-	or Instance.new("BindableEvent")
+local questCompleted = ReplicatedStorage:FindFirstChild("SecretVillageQuestCompleted") or Instance.new("BindableEvent")
 questCompleted.Name = "SecretVillageQuestCompleted"
 questCompleted.Parent = ReplicatedStorage
 
 local quests = {
-	{
-		id = "delivery",
-		name = "📦 Срочная доставка",
-		text = "Отвези посылку к синему терминалу",
-		reward = 180,
-		xp = 40,
-		target = Vector3.new(100, 0.5, 0),
-	},
-	{
-		id = "taxi",
-		name = "🚕 Пассажир",
-		text = "Доставь пассажира к старому дому",
-		reward = 300,
-		xp = 60,
-		target = Vector3.new(-70, 1, -30),
-	},
-	{
-		id = "explore",
-		name = "🔎 Следопыт",
-		text = "Найди новый секрет после взятия задания",
-		reward = 250,
-		xp = 50,
-		target = Vector3.zero,
-	},
-	{
-		id = "fisher",
-		name = "🎣 Улов дня",
-		text = "Поймай 5 новых рыб",
-		reward = 220,
-		xp = 45,
-		target = Vector3.zero,
-	},
+	{id = "delivery", name = "📦 Срочная доставка", text = "Отвези посылку к синему терминалу", reward = 180, xp = 40, target = Vector3.new(100, 0.5, 0)},
+	{id = "taxi", name = "🚕 Пассажир", text = "Доставь пассажира к старому дому", reward = 300, xp = 60, target = Vector3.new(-70, 1, -30)},
+	{id = "explore", name = "🔎 Следопыт", text = "Найди новый секрет после взятия задания", reward = 250, xp = 50, target = Vector3.zero},
+	{id = "fisher", name = "🎣 Улов дня", text = "Поймай 5 новых рыб", reward = 220, xp = 45, target = Vector3.zero},
 }
 
 local byId = {}
-for _, quest in ipairs(quests) do
-	byId[quest.id] = quest
-end
+for _, quest in ipairs(quests) do byId[quest.id] = quest end
 
-local finishing = {}
-local promptCooldown = {}
-local completeCooldown = {}
-local initialized = {}
+local finishing, promptCooldown, completeCooldown, initialized = {}, {}, {}, {}
 
 local function notify(player, message)
-	if player and player.Parent then
-		Notify:FireClient(player, message)
-	end
+	if player and player.Parent then Notify:FireClient(player, message) end
 end
 
 local function loaded(player)
@@ -86,9 +50,7 @@ end
 local function money(player)
 	local leaderstats = player:FindFirstChild("leaderstats")
 	local value = leaderstats and leaderstats:FindFirstChild("Money")
-	if value and value:IsA("IntValue") and value.Value >= 0 then
-		return value
-	end
+	if value and value:IsA("IntValue") and value.Value >= 0 then return value end
 	return nil
 end
 
@@ -101,26 +63,13 @@ local function clearQuest(player)
 end
 
 local function initializePlayer(player)
-	if initialized[player] then
-		return
-	end
+	if initialized[player] then return end
 	initialized[player] = true
-
-	if player:GetAttribute("QuestActive") == nil then
-		player:SetAttribute("QuestActive", "")
-	end
-	if player:GetAttribute("QuestProgress") == nil then
-		player:SetAttribute("QuestProgress", 0)
-	end
-	if player:GetAttribute("QuestTarget") == nil then
-		player:SetAttribute("QuestTarget", Vector3.zero)
-	end
-	if player:GetAttribute("QuestStartSecrets") == nil then
-		player:SetAttribute("QuestStartSecrets", 0)
-	end
-	if player:GetAttribute("QuestStartFish") == nil then
-		player:SetAttribute("QuestStartFish", 0)
-	end
+	if player:GetAttribute("QuestActive") == nil then player:SetAttribute("QuestActive", "") end
+	if player:GetAttribute("QuestProgress") == nil then player:SetAttribute("QuestProgress", 0) end
+	if player:GetAttribute("QuestTarget") == nil then player:SetAttribute("QuestTarget", Vector3.zero) end
+	if player:GetAttribute("QuestStartSecrets") == nil then player:SetAttribute("QuestStartSecrets", 0) end
+	if player:GetAttribute("QuestStartFish") == nil then player:SetAttribute("QuestStartFish", 0) end
 
 	player:GetAttributeChangedSignal("TotalFish"):Connect(function()
 		if player:GetAttribute("QuestActive") == "fisher" then
@@ -129,7 +78,6 @@ local function initializePlayer(player)
 			player:SetAttribute("QuestProgress", math.min(5, math.max(0, currentFish - startFish)))
 		end
 	end)
-
 	player:GetAttributeChangedSignal("SecretsFound"):Connect(function()
 		if player:GetAttribute("QuestActive") == "explore" then
 			local startSecrets = math.max(0, tonumber(player:GetAttribute("QuestStartSecrets")) or 0)
@@ -140,34 +88,18 @@ local function initializePlayer(player)
 end
 
 local function startQuest(player, questId)
-	if not player or not player:IsA("Player") or not player.Parent then
-		return
-	end
-	if not loaded(player) then
-		notify(player, "⏳ Профиль ещё загружается.")
-		return
-	end
-	if finishing[player] then
-		return
-	end
-
+	if not player or not player:IsA("Player") or not player.Parent then return end
+	if not loaded(player) then notify(player, "⏳ Профиль ещё загружается."); return end
+	if finishing[player] then return end
 	local active = player:GetAttribute("QuestActive")
-	if active and active ~= "" then
-		notify(player, "📋 Сначала закончи текущее задание.")
-		return
-	end
-
+	if active and active ~= "" then notify(player, "📋 Сначала закончи текущее задание."); return end
 	local quest = byId[questId]
-	if not quest then
-		return
-	end
-
+	if not quest then return end
 	player:SetAttribute("QuestActive", quest.id)
 	player:SetAttribute("QuestProgress", 0)
 	player:SetAttribute("QuestTarget", quest.target)
 	player:SetAttribute("QuestStartSecrets", math.max(0, tonumber(player:GetAttribute("SecretsFound")) or 0))
 	player:SetAttribute("QuestStartFish", math.max(0, tonumber(player:GetAttribute("TotalFish")) or 0))
-
 	notify(player, quest.name .. " — " .. quest.text .. ". Награда $" .. quest.reward .. " +" .. quest.xp .. " XP")
 end
 
@@ -186,7 +118,6 @@ local function createQuestNpc(name, position, title, questId)
 	gui.StudsOffset = Vector3.new(0, 5, 0)
 	gui.AlwaysOnTop = true
 	gui.Parent = part
-
 	local label = Instance.new("TextLabel")
 	label.Name = "Title"
 	label.Size = UDim2.fromScale(1, 1)
@@ -204,10 +135,7 @@ local function createQuestNpc(name, position, title, questId)
 	prompt.MaxActivationDistance = 12
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = part
-
-	prompt.Triggered:Connect(function(player)
-		startQuest(player, questId)
-	end)
+	prompt.Triggered:Connect(function(player) startQuest(player, questId) end)
 end
 
 createQuestNpc("CourierQuestNPC", Vector3.new(-20, 3.5, 35), "📦 КУРЬЕР", "delivery")
@@ -223,7 +151,6 @@ target.Anchored = true
 target.Material = Enum.Material.Neon
 target.Transparency = 0.35
 target.Parent = root
-
 local targetPrompt = Instance.new("ProximityPrompt")
 targetPrompt.Name = "DeliveryPrompt"
 targetPrompt.ActionText = "Сдать"
@@ -233,112 +160,66 @@ targetPrompt.RequiresLineOfSight = false
 targetPrompt.Parent = target
 
 local function finish(player, quest)
-	if finishing[player] then
-		return
-	end
+	if finishing[player] then return end
 	finishing[player] = true
-
 	local moneyValue = money(player)
-	if not moneyValue or not loaded(player) then
-		finishing[player] = nil
-		return
-	end
-
+	if not moneyValue or not loaded(player) then finishing[player] = nil; return end
 	clearQuest(player)
 	player:SetAttribute("QuestXP", math.max(0, tonumber(player:GetAttribute("QuestXP")) or 0) + quest.xp)
 	moneyValue.Value += quest.reward
 	questCompleted:Fire(player)
 	notify(player, "✅ Задание «" .. quest.name .. "» выполнено! +$" .. quest.reward .. " +" .. quest.xp .. " XP")
-
 	finishing[player] = nil
 end
 
 local function tryComplete(player)
-	if not player or not player:IsA("Player") or not player.Parent or not loaded(player) then
-		return
-	end
-
+	if not player or not player:IsA("Player") or not player.Parent or not loaded(player) then return end
 	local now = os.clock()
-	if now - (completeCooldown[player] or 0) < 0.75 then
-		return
-	end
+	if now - (completeCooldown[player] or 0) < 0.75 then return end
 	completeCooldown[player] = now
-
-	if finishing[player] then
-		return
-	end
-
-	local questId = player:GetAttribute("QuestActive")
-	local quest = byId[questId]
-	if not quest then
-		return
-	end
-
+	if finishing[player] then return end
+	local quest = byId[player:GetAttribute("QuestActive")]
+	if not quest then return end
 	local character = player.Character
 	local playerRoot = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not playerRoot or not humanoid or humanoid.Health <= 0 then
-		return
-	end
+	if not playerRoot or not humanoid or humanoid.Health <= 0 then return end
 
-	if questId == "delivery" then
-		if (playerRoot.Position - target.Position).Magnitude > 14 then
-			notify(player, "📦 Подойди к терминалу доставки.")
-			return
-		end
-	elseif questId == "taxi" then
+	if quest.id == "delivery" then
+		if (playerRoot.Position - target.Position).Magnitude > 14 then notify(player, "📦 Подойди к терминалу доставки."); return end
+	elseif quest.id == "taxi" then
 		local vehicleRoot = Workspace:FindFirstChild("SECRET_VILLAGE_VEHICLES")
 		local seat = humanoid.SeatPart
-		if not vehicleRoot or not seat or not seat:IsDescendantOf(vehicleRoot)
-			or (playerRoot.Position - quest.target).Magnitude > 16 then
-			notify(player, "🚕 Сядь в такси и привези пассажира к старому дому.")
-			return
-		end
-
+		if not vehicleRoot or not seat or not seat:IsDescendantOf(vehicleRoot) or (playerRoot.Position - quest.target).Magnitude > 16 then
+			notify(player, "🚕 Сядь в такси и привези пассажира к старому дому."); return end
 		local vehicleModel = seat:FindFirstAncestorOfClass("Model")
-		if not vehicleModel
-			or vehicleModel:GetAttribute("OwnerUserId") ~= player.UserId
-			or vehicleModel:GetAttribute("VehicleType") ~= "Taxi" then
-			notify(player, "🚕 Для задания нужно использовать своё такси.")
-			return
-		end
-	elseif questId == "explore" then
+		if not vehicleModel or vehicleModel:GetAttribute("OwnerUserId") ~= player.UserId or vehicleModel:GetAttribute("VehicleType") ~= "Taxi" then
+			notify(player, "🚕 Для задания нужно использовать своё такси."); return end
+	elseif quest.id == "explore" then
 		local startSecrets = math.max(0, tonumber(player:GetAttribute("QuestStartSecrets")) or 0)
 		local currentSecrets = math.max(0, tonumber(player:GetAttribute("SecretsFound")) or 0)
-		if currentSecrets <= startSecrets then
-			notify(player, "🔎 Найди новый секрет после взятия задания.")
-			return
-		end
+		if currentSecrets <= startSecrets then notify(player, "🔎 Найди новый секрет после взятия задания."); return end
 		player:SetAttribute("QuestProgress", 1)
-	elseif questId == "fisher" then
+	elseif quest.id == "fisher" then
 		local startFish = math.max(0, tonumber(player:GetAttribute("QuestStartFish")) or 0)
 		local currentFish = math.max(0, tonumber(player:GetAttribute("TotalFish")) or 0)
 		local progress = currentFish - startFish
-		if progress < 5 then
-			notify(player, "🎣 Нужно поймать ещё " .. math.max(0, 5 - progress) .. " рыб.")
-			return
-		end
+		if progress < 5 then notify(player, "🎣 Нужно поймать ещё " .. math.max(0, 5 - progress) .. " рыб."); return end
 		player:SetAttribute("QuestProgress", 5)
 	end
-
 	finish(player, quest)
 end
 
 Complete.OnServerEvent:Connect(tryComplete)
 targetPrompt.Triggered:Connect(function(player)
 	local now = os.clock()
-	if now - (promptCooldown[player] or 0) < 1 then
-		return
-	end
+	if now - (promptCooldown[player] or 0) < 1 then return end
 	promptCooldown[player] = now
 	tryComplete(player)
 end)
 
 Players.PlayerAdded:Connect(initializePlayer)
-for _, player in ipairs(Players:GetPlayers()) do
-	task.spawn(initializePlayer, player)
-end
-
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(initializePlayer, player) end
 Players.PlayerRemoving:Connect(function(player)
 	initialized[player] = nil
 	finishing[player] = nil
