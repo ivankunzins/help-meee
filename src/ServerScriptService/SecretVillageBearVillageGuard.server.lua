@@ -1,4 +1,4 @@
--- SECRET VILLAGE BEAR VILLAGE GUARD v1
+-- SECRET VILLAGE BEAR VILLAGE GUARD v2
 -- Bears may protect the forest, but they must never enter the village.
 -- This controller replaces the older boundary controller and hard-resets
 -- a bear to its home position if it crosses the village safety perimeter.
@@ -19,12 +19,12 @@ if not bearsFolder then
 	return
 end
 
-if world:FindFirstChild("BEAR_VILLAGE_GUARD_V1") then
+if world:FindFirstChild("BEAR_VILLAGE_GUARD_V2") then
 	return
 end
 
 local marker = Instance.new("BoolValue")
-marker.Name = "BEAR_VILLAGE_GUARD_V1"
+marker.Name = "BEAR_VILLAGE_GUARD_V2"
 marker.Value = true
 marker.Parent = world
 
@@ -33,7 +33,6 @@ local FOREST_START_RADIUS = 155
 local FOREST_END_RADIUS = 235
 local CONTROL_INTERVAL = 0.12
 local HOME_REACH_DISTANCE = 6
-local HARD_RESET_RADIUS = 140
 
 local homes = {}
 local elapsed = 0
@@ -85,13 +84,11 @@ local function getHome(bear, root)
 end
 
 local function returnHome(bear, root, humanoid, home)
-	-- A hard reset prevents momentum or another AI controller from carrying
-	-- the bear into the village. The bear is placed back at its forest post.
-	if flatRadius(root.Position) <= HARD_RESET_RADIUS then
-		bear:PivotTo(home)
-		root.AssemblyLinearVelocity = Vector3.zero
-		root.AssemblyAngularVelocity = Vector3.zero
-	end
+	-- Always teleport back as soon as the bear enters the village safety zone.
+	-- This prevents momentum and competing MoveTo calls from carrying it in.
+	bear:PivotTo(home)
+	root.AssemblyLinearVelocity = Vector3.zero
+	root.AssemblyAngularVelocity = Vector3.zero
 
 	if (root.Position - home.Position).Magnitude > HOME_REACH_DISTANCE then
 		humanoid:MoveTo(home.Position)
@@ -147,4 +144,4 @@ RunService.Heartbeat:Connect(function(deltaTime)
 	end
 end)
 
-print("SECRET VILLAGE BEAR VILLAGE GUARD v1 READY: bears cannot enter the village")
+print("SECRET VILLAGE BEAR VILLAGE GUARD v2 READY: bears cannot enter the village")
