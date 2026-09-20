@@ -36,7 +36,6 @@ local quests = {
 
 local byId = {}
 for _, quest in ipairs(quests) do byId[quest.id] = quest end
-
 local finishing, promptCooldown, completeCooldown, initialized = {}, {}, {}, {}
 
 local function notify(player, message)
@@ -105,36 +104,14 @@ end
 
 local function createQuestNpc(name, position, title, questId)
 	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = Vector3.new(5, 7, 5)
-	part.Position = position
-	part.Anchored = true
-	part.Material = Enum.Material.Wood
-	part.Parent = root
-
+	part.Name, part.Size, part.Position = name, Vector3.new(5, 7, 5), position
+	part.Anchored, part.Material, part.Parent = true, Enum.Material.Wood, root
 	local gui = Instance.new("BillboardGui")
-	gui.Name = "QuestBillboard"
-	gui.Size = UDim2.fromOffset(280, 55)
-	gui.StudsOffset = Vector3.new(0, 5, 0)
-	gui.AlwaysOnTop = true
-	gui.Parent = part
+	gui.Name, gui.Size, gui.StudsOffset, gui.AlwaysOnTop, gui.Parent = "QuestBillboard", UDim2.fromOffset(280, 55), Vector3.new(0, 5, 0), true, part
 	local label = Instance.new("TextLabel")
-	label.Name = "Title"
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Text = title
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Parent = gui
-
+	label.Name, label.Size, label.BackgroundTransparency, label.Text, label.TextScaled, label.Font, label.Parent = "Title", UDim2.fromScale(1, 1), 1, title, true, Enum.Font.GothamBold, gui
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = "QuestPrompt"
-	prompt.ActionText = "Задание"
-	prompt.ObjectText = name
-	prompt.HoldDuration = 0.35
-	prompt.MaxActivationDistance = 12
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = part
+	prompt.Name, prompt.ActionText, prompt.ObjectText, prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.Parent = "QuestPrompt", "Задание", name, 0.35, 12, false, part
 	prompt.Triggered:Connect(function(player) startQuest(player, questId) end)
 end
 
@@ -144,20 +121,10 @@ createQuestNpc("ExplorerQuestNPC", Vector3.new(35, 3.5, 55), "🔎 ИССЛЕД�
 createQuestNpc("FishingQuestNPC", Vector3.new(65, 3.5, 25), "🎣 РЫБОЛОВ", "fisher")
 
 local target = Instance.new("Part")
-target.Name = "DeliveryTarget"
-target.Size = Vector3.new(8, 0.5, 8)
-target.Position = Vector3.new(100, 0.5, 0)
-target.Anchored = true
-target.Material = Enum.Material.Neon
-target.Transparency = 0.35
-target.Parent = root
+target.Name, target.Size, target.Position = "DeliveryTarget", Vector3.new(8, 0.5, 8), Vector3.new(100, 0.5, 0)
+target.Anchored, target.Material, target.Transparency, target.Parent = true, Enum.Material.Neon, 0.35, root
 local targetPrompt = Instance.new("ProximityPrompt")
-targetPrompt.Name = "DeliveryPrompt"
-targetPrompt.ActionText = "Сдать"
-targetPrompt.ObjectText = "📦 Терминал доставки"
-targetPrompt.MaxActivationDistance = 12
-targetPrompt.RequiresLineOfSight = false
-targetPrompt.Parent = target
+targetPrompt.Name, targetPrompt.ActionText, targetPrompt.ObjectText, targetPrompt.MaxActivationDistance, targetPrompt.RequiresLineOfSight, targetPrompt.Parent = "DeliveryPrompt", "Сдать", "📦 Терминал доставки", 12, false, target
 
 local function finish(player, quest)
 	if finishing[player] then return end
@@ -190,11 +157,9 @@ local function tryComplete(player)
 	elseif quest.id == "taxi" then
 		local vehicleRoot = Workspace:FindFirstChild("SECRET_VILLAGE_VEHICLES")
 		local seat = humanoid.SeatPart
-		if not vehicleRoot or not seat or not seat:IsDescendantOf(vehicleRoot) or (playerRoot.Position - quest.target).Magnitude > 16 then
-			notify(player, "🚕 Сядь в такси и привези пассажира к старому дому."); return end
+		if not vehicleRoot or not seat or not seat:IsDescendantOf(vehicleRoot) or (playerRoot.Position - quest.target).Magnitude > 16 then notify(player, "🚕 Сядь в такси и привези пассажира к старому дому."); return end
 		local vehicleModel = seat:FindFirstAncestorOfClass("Model")
-		if not vehicleModel or vehicleModel:GetAttribute("OwnerUserId") ~= player.UserId or vehicleModel:GetAttribute("VehicleType") ~= "Taxi" then
-			notify(player, "🚕 Для задания нужно использовать своё такси."); return end
+		if not vehicleModel or vehicleModel:GetAttribute("OwnerUserId") ~= player.UserId or vehicleModel:GetAttribute("VehicleType") ~= "Taxi" then notify(player, "🚕 Для задания нужно использовать своё такси."); return end
 	elseif quest.id == "explore" then
 		local startSecrets = math.max(0, tonumber(player:GetAttribute("QuestStartSecrets")) or 0)
 		local currentSecrets = math.max(0, tonumber(player:GetAttribute("SecretsFound")) or 0)
@@ -221,10 +186,7 @@ end)
 Players.PlayerAdded:Connect(initializePlayer)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(initializePlayer, player) end
 Players.PlayerRemoving:Connect(function(player)
-	initialized[player] = nil
-	finishing[player] = nil
-	promptCooldown[player] = nil
-	completeCooldown[player] = nil
+	initialized[player], finishing[player], promptCooldown[player], completeCooldown[player] = nil, nil, nil, nil
 end)
 
 print("SECRET VILLAGE QUESTS v6 READY: safe initialization + validation + no duplicate generation")
