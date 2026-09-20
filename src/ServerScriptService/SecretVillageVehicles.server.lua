@@ -1,4 +1,4 @@
--- SECRET VILLAGE VEHICLES v3
+-- SECRET VILLAGE VEHICLES v4
 -- Server-authoritative arcade vehicles with validation and rate limiting.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
@@ -89,6 +89,9 @@ local function spawn(p,kind)
   return
  end
 
+ -- Remove the player's previous vehicle before creating a replacement.
+ destroyActive(p)
+
  local cf=char:GetPivot()
  local base=cf.Position+cf.LookVector*14+Vector3.new(0,3,0)
  local model=Instance.new("Model")
@@ -114,7 +117,7 @@ local function spawn(p,kind)
  seat.Size=Vector3.new(3,1,3)
  seat.CFrame=body.CFrame*CFrame.new(0,1.7,-1)
  seat.Anchored=false
- seat.MaxSpeed=0
+ seat.MaxSpeed=100
  seat.Parent=model
  seat:SetNetworkOwner(nil)
 
