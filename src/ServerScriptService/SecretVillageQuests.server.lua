@@ -104,14 +104,34 @@ end
 
 local function createQuestNpc(name, position, title, questId)
 	local part = Instance.new("Part")
-	part.Name, part.Size, part.Position = name, Vector3.new(5, 7, 5), position
-	part.Anchored, part.Material, part.Parent = true, Enum.Material.Wood, root
+	part.Name = name
+	part.Size = Vector3.new(5, 7, 5)
+	part.Position = position
+	part.Anchored = true
+	part.Material = Enum.Material.Wood
+	part.Parent = root
 	local gui = Instance.new("BillboardGui")
-	gui.Name, gui.Size, gui.StudsOffset, gui.AlwaysOnTop, gui.Parent = "QuestBillboard", UDim2.fromOffset(280, 55), Vector3.new(0, 5, 0), true, part
+	gui.Name = "QuestBillboard"
+	gui.Size = UDim2.fromOffset(280, 55)
+	gui.StudsOffset = Vector3.new(0, 5, 0)
+	gui.AlwaysOnTop = true
+	gui.Parent = part
 	local label = Instance.new("TextLabel")
-	label.Name, label.Size, label.BackgroundTransparency, label.Text, label.TextScaled, label.Font, label.Parent = "Title", UDim2.fromScale(1, 1), 1, title, true, Enum.Font.GothamBold, gui
+	label.Name = "Title"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = title
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Parent = gui
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name, prompt.ActionText, prompt.ObjectText, prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.Parent = "QuestPrompt", "Задание", name, 0.35, 12, false, part
+	prompt.Name = "QuestPrompt"
+	prompt.ActionText = "Задание"
+	prompt.ObjectText = name
+	prompt.HoldDuration = 0.35
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = part
 	prompt.Triggered:Connect(function(player) startQuest(player, questId) end)
 end
 
@@ -121,10 +141,20 @@ createQuestNpc("ExplorerQuestNPC", Vector3.new(35, 3.5, 55), "🔎 ИССЛЕД�
 createQuestNpc("FishingQuestNPC", Vector3.new(65, 3.5, 25), "🎣 РЫБОЛОВ", "fisher")
 
 local target = Instance.new("Part")
-target.Name, target.Size, target.Position = "DeliveryTarget", Vector3.new(8, 0.5, 8), Vector3.new(100, 0.5, 0)
-target.Anchored, target.Material, target.Transparency, target.Parent = true, Enum.Material.Neon, 0.35, root
+target.Name = "DeliveryTarget"
+target.Size = Vector3.new(8, 0.5, 8)
+target.Position = Vector3.new(100, 0.5, 0)
+target.Anchored = true
+target.Material = Enum.Material.Neon
+target.Transparency = 0.35
+target.Parent = root
 local targetPrompt = Instance.new("ProximityPrompt")
-targetPrompt.Name, targetPrompt.ActionText, targetPrompt.ObjectText, targetPrompt.MaxActivationDistance, targetPrompt.RequiresLineOfSight, targetPrompt.Parent = "DeliveryPrompt", "Сдать", "📦 Терминал доставки", 12, false, target
+targetPrompt.Name = "DeliveryPrompt"
+targetPrompt.ActionText = "Сдать"
+targetPrompt.ObjectText = "📦 Терминал доставки"
+targetPrompt.MaxActivationDistance = 12
+targetPrompt.RequiresLineOfSight = false
+targetPrompt.Parent = target
 
 local function finish(player, quest)
 	if finishing[player] then return end
@@ -151,7 +181,6 @@ local function tryComplete(player)
 	local playerRoot = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not playerRoot or not humanoid or humanoid.Health <= 0 then return end
-
 	if quest.id == "delivery" then
 		if (playerRoot.Position - target.Position).Magnitude > 14 then notify(player, "📦 Подойди к терминалу доставки."); return end
 	elseif quest.id == "taxi" then
