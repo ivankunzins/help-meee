@@ -1,9 +1,8 @@
--- SECRET VILLAGE PROGRESSION v5
--- Persistent XP, levels, quest count and lifetime distance with migration and safe saving.
+-- SECRET VILLAGE PROGRESSION v6
+-- Persistent XP, levels, quest count and lifetime distance with migration, safe saving and movement tracking.
 local Players=game:GetService("Players")
 local DataStoreService=game:GetService("DataStoreService")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
-
 local Store=DataStoreService:GetDataStore("SecretVillage_Progression_v3")
 local Legacy=DataStoreService:GetDataStore("SecretVillage_Progression_v1")
 local remotes=ReplicatedStorage:WaitForChild("SecretVillageRemotes")
@@ -11,26 +10,22 @@ local Notify=remotes:WaitForChild("Notify")
 local event=ReplicatedStorage:FindFirstChild("SecretVillageQuestCompleted") or Instance.new("BindableEvent")
 event.Name="SecretVillageQuestCompleted"
 event.Parent=ReplicatedStorage
-
 local loaded={}
 local saving={}
 local pendingCompletions={}
 local connections={}
-
+local lastPositions={}
 local function safeNumber(value,minimum)
  if type(value)~="number" or value~=value or value==math.huge or value==-math.huge then return minimum end
  return math.max(minimum,math.floor(value))
 end
-
 local function level(x)
  return math.floor(safeNumber(x,0)/100)+1
 end
-
 local function readData(store,key)
  local ok,data=pcall(function() return store:GetAsync(key) end)
  return ok,data
 end
-
 local function bindLevelUpdates(player)
  if connections[player] then connections[player]:Disconnect() end
  connections[player]=player:GetAttributeChangedSignal("QuestXP"):Connect(function()
@@ -41,7 +36,6 @@ local function bindLevelUpdates(player)
   if newLevel>oldLevel then Notify:FireClient(player,"⭐ НОВЫЙ УРОВЕНЬ! Уровень "..newLevel..".") end
  end)
 end
-
 local function load(player)
  if not player or not player.Parent then return end
  local key="u_"..player.UserId
@@ -55,14 +49,12 @@ local function load(player)
   local oldOk,oldData=readData(Legacy,key)
   data=(oldOk and type(oldData)=="table") and oldData or {}
  end
-
  local xp=safeNumber(data.XP,0)
  local quests=safeNumber(data.Quests,0)
  local distance=safeNumber(data.Distance,0)
  local queued=safeNumber(pendingCompletions[player],0)
  pendingCompletions[player]=nil
  quests+=queued
-
  player:SetAttribute("QuestXP",xp)
  player:SetAttribute("QuestsCompleted",quests)
  player:SetAttribute("LifetimeDistance",distance)
@@ -71,7 +63,6 @@ local function load(player)
  loaded[player]=true
  bindLevelUpdates(player)
 end
-
 local function save(player)
  if not player or not player.Parent or not loaded[player] or saving[player] then return false end
  saving[player]=true
@@ -98,7 +89,6 @@ local function save(player)
  saving[player]=nil
  return success
 end
-
 event.Event:Connect(function(player)
  if not player or not player:IsA("Player") then return end
  if loaded[player] and player.Parent then
@@ -107,17 +97,14 @@ event.Event:Connect(function(player)
   pendingCompletions[player]=safeNumber(pendingCompletions[player],0)+1
  end
 end)
-
 local function onPlayerAdded(player)
  if not player or not player.Parent then return end
  task.spawn(load,player)
 end
-
 Players.PlayerAdded:Connect(onPlayerAdded)
 for _,player in ipairs(Players:GetPlayers()) do
  task.spawn(onPlayerAdded,player)
 end
-
 Players.PlayerRemoving:Connect(function(player)
  save(player)
  if connections[player] then connections[player]:Disconnect() end
@@ -125,15 +112,39 @@ Players.PlayerRemoving:Connect(function(player)
  loaded[player]=nil
  saving[player]=nil
  pendingCompletions[player]=nil
+ lastPositions[player]=nil
 end)
-
+task.spawn(function()
+ while true do
+  task.wait(1)
+  for _,player in ipairs(Players:GetPlayers()) do
+   if loaded[player] and player.Parent and player:GetAttribute("ProgressionLoaded") then
+    local character=player.Character
+    local root=character and character:FindFirstChild("HumanoidRootPart")
+    if root then
+     local current=root.Position
+     local previous=lastPositions[player]
+     if previous then
+      local delta=(current-previous).Magnitude
+      if delta>0 and delta<100 then
+       local total=safeNumber(player:GetAttribute("LifetimeDistance"),0)+math.floor(delta)
+       player:SetAttribute("LifetimeDistance",total)
+      end
+     end
+     lastPositions[player]=current
+    else
+     lastPositions[player]=nil
+    end
+   end
+  end
+ end
+end)
 task.spawn(function()
  while true do
   task.wait(120)
   for _,player in ipairs(Players:GetPlayers()) do task.spawn(save,player) end
  end
 end)
-
 game:BindToClose(function()
  for _,player in ipairs(Players:GetPlayers()) do save(player) end
 end)
