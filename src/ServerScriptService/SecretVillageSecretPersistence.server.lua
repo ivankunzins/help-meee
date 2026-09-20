@@ -1,4 +1,4 @@
--- SECRET VILLAGE — persistent individual secret ownership v2
+-- SECRET VILLAGE — persistent individual secret ownership v3
 local Players=game:GetService("Players")
 local DataStoreService=game:GetService("DataStoreService")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
@@ -46,18 +46,26 @@ local function load(p)
  end
 
  data[p]=saved
+
+ -- Wait briefly for the core profile so SecretsFound is not overwritten by a race.
+ for _=1,150 do
+  if p:GetAttribute("CoreLoaded")~=nil then break end
+  task.wait(0.1)
+ end
+
  local count=0
  for id,value in pairs(saved) do
   if value==true then
    local numericId=tonumber(id)
-   if numericId and numericId>=1 and numericId<=100 then
+   if numericId and numericId>=1 and numericId<=100 and numericId%1==0 then
     p:SetAttribute("Secret_"..numericId,true)
     count+=1
    end
   end
  end
 
- p:SetAttribute("SecretsFound",math.max(p:GetAttribute("SecretsFound") or 0,count))
+ local currentCount=tonumber(p:GetAttribute("SecretsFound")) or 0
+ p:SetAttribute("SecretsFound",math.max(currentCount,count))
  p:SetAttribute("SecretsLoaded",true)
  loaded[p]=true
  loading[p]=nil
@@ -74,8 +82,14 @@ local function save(p)
  local success=false
  for attempt=1,3 do
   local ok,err=pcall(function()
-   Store:UpdateAsync("u_"..p.UserId,function()
-    return d
+   Store:UpdateAsync("u_"..p.UserId,function(old)
+    old=type(old)=="table" and old or {}
+    for key,value in pairs(d) do
+     if type(key)=="string" and value==true then
+      old[key]=true
+     end
+    end
+    return old
    end)
   end)
   if ok then
