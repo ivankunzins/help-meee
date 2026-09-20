@@ -1,5 +1,5 @@
--- SECRET VILLAGE CLEAN INSTALLER v28
--- Installs gameplay and exactly one authoritative world layer.
+-- SECRET VILLAGE CLEAN INSTALLER v29
+-- Installs gameplay and exactly one authoritative world layer plus cozy village art.
 local HttpService=game:GetService("HttpService")
 local ScriptEditorService=game:GetService("ScriptEditorService")
 local SSS=game:GetService("ServerScriptService")
@@ -7,7 +7,7 @@ local RS=game:GetService("ReplicatedStorage")
 local SPS=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
 local WS=game:GetService("Workspace")
 local BASE="https://raw.githubusercontent.com/ivankunzins/help-meee/main/"
-local CACHE="?install=28"
+local CACHE="?install=29"
 
 -- Legacy scripts that caused duplicate visual/world layers.
 local legacy={
@@ -33,7 +33,8 @@ local files={
  {"src/ServerScriptService/SecretVillageQuests.server.lua","Script"},{"src/ServerScriptService/SecretVillageProgression.server.lua","Script"},
  {"src/ServerScriptService/SecretVillageAchievements.server.lua","Script"},{"src/ServerScriptService/SecretVillageDailyV2.server.lua","Script"},
  {"src/ServerScriptService/SecretVillageVehicles.server.lua","Script"},{"src/ServerScriptService/SecretVillageCoop.server.lua","Script"},
- {"src/ServerScriptService/SecretVillageUnifiedWorld.server.lua","Script"},{"src/ServerScriptService/SecretVillageFinalWorldMaster.server.lua","Script"},{"src/ServerScriptService/SecretVillageSkyCycleFinal.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageUnifiedWorld.server.lua","Script"},{"src/ServerScriptService/SecretVillageFinalWorldMaster.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageCozyVillage.server.lua","Script"},{"src/ServerScriptService/SecretVillageSkyCycleFinal.server.lua","Script"},
  {"src/ServerScriptService/SecretVillageBootAudit.server.lua","Script"},{"src/StarterPlayer/StarterPlayerScripts/SecretVillage.client.lua","LocalScript"}
 }
 local function parentFor(path)
@@ -41,9 +42,9 @@ local function parentFor(path)
  if path:find("src/StarterPlayer/StarterPlayerScripts/",1,true) then return SPS end
  return SSS
 end
-local function objName(path)return path:match("([^/]+)$"):gsub("%.server%.lua$",""):gsub("%.client%.lua$",""):gsub("%.lua$","")end
+local function objName(path)return path:match("([^/]+)$"):gsub("%.server%.lua$",""):gsub("%.client%.lua$",""):gsub("%.lua$","") end
 local sec=RS:FindFirstChild("SecretVillage") or Instance.new("Folder");sec.Name="SecretVillage";sec.Parent=RS
-print("SECRET VILLAGE CLEAN INSTALLER v28 | FILES: "..#files)
+print("SECRET VILLAGE CLEAN INSTALLER v29 | FILES: "..#files)
 local okCount,failCount=0,0
 for i,item in ipairs(files) do
  local path,className=item[1],item[2];local name=objName(path)
@@ -57,4 +58,4 @@ for i,item in ipairs(files) do
  end
 end
 print(string.format("INSTALL COMPLETE: %d/%d OK",okCount,#files));print("FAILED: "..failCount)
-if failCount==0 then print("SUCCESS — ONE AUTHORITATIVE WORLD LAYER. Press Play and wait 10 seconds.")end
+if failCount==0 then print("SUCCESS — ONE AUTHORITATIVE WORLD LAYER + COZY VILLAGE ART. Press Play and wait 10 seconds.")end
