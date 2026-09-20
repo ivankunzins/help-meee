@@ -27,7 +27,7 @@ local function stats(p)
  return m
 end
 local function default()
- return {Money=Config.StartingMoney,SecretsFound=0,JanitorUnlocked=false,FisherUnlocked=false,TotalLeaves=0,TotalFish=0,Rounds=0}
+ return {Money=Config.StartingMoney,SecretsFound=0,JanitorUnlocked=false,FisherUnlocked=false,TotalLeaves=0,TotalFish=0,Rounds=0,JobsCompleted=0}
 end
 local function number(v,floor)
  local n=tonumber(v);if not n or n~=n or n==math.huge or n==-math.huge then return floor end
@@ -41,19 +41,19 @@ local function load(p)
  end
  local d=default()
  if type(data)=="table" then
-  d.Money=number(data.Money,d.Money);d.SecretsFound=number(data.SecretsFound,0);d.TotalLeaves=number(data.TotalLeaves,0);d.TotalFish=number(data.TotalFish,0);d.Rounds=number(data.Rounds,0)
+  d.Money=number(data.Money,d.Money);d.SecretsFound=number(data.SecretsFound,0);d.TotalLeaves=number(data.TotalLeaves,0);d.TotalFish=number(data.TotalFish,0);d.Rounds=number(data.Rounds,0);d.JobsCompleted=number(data.JobsCompleted,0)
   d.JanitorUnlocked=data.JanitorUnlocked==true;d.FisherUnlocked=data.FisherUnlocked==true
  end
  profiles[p]=d;stats(p).Value=d.Money
- p:SetAttribute("SecretsFound",d.SecretsFound);p:SetAttribute("TotalLeaves",d.TotalLeaves);p:SetAttribute("TotalFish",d.TotalFish);p:SetAttribute("Rounds",d.Rounds)
+ p:SetAttribute("SecretsFound",d.SecretsFound);p:SetAttribute("TotalLeaves",d.TotalLeaves);p:SetAttribute("TotalFish",d.TotalFish);p:SetAttribute("Rounds",d.Rounds);p:SetAttribute("JobsCompleted",d.JobsCompleted)
  p:SetAttribute("JanitorUnlocked",d.JanitorUnlocked);p:SetAttribute("FisherUnlocked",d.FisherUnlocked);p:SetAttribute("InJob",false);p:SetAttribute("JobType","");p:SetAttribute("RoundSeconds",Config.RoundSeconds);p:SetAttribute("CoreLoaded",true)
  return true
 end
 local function save(p)
  local d=profiles[p];if not d or not p:GetAttribute("CoreLoaded") or saving[p] then return false end
  saving[p]=true
- d.Money=number(stats(p).Value,Config.StartingMoney);d.SecretsFound=number(p:GetAttribute("SecretsFound"),d.SecretsFound);d.TotalLeaves=number(p:GetAttribute("TotalLeaves"),d.TotalLeaves);d.TotalFish=number(p:GetAttribute("TotalFish"),d.TotalFish);d.Rounds=number(p:GetAttribute("Rounds"),d.Rounds);d.JanitorUnlocked=p:GetAttribute("JanitorUnlocked")==true;d.FisherUnlocked=p:GetAttribute("FisherUnlocked")==true
- local payload={Money=d.Money,SecretsFound=d.SecretsFound,TotalLeaves=d.TotalLeaves,TotalFish=d.TotalFish,Rounds=d.Rounds,JanitorUnlocked=d.JanitorUnlocked,FisherUnlocked=d.FisherUnlocked,SchemaVersion=4}
+ d.Money=number(stats(p).Value,Config.StartingMoney);d.SecretsFound=number(p:GetAttribute("SecretsFound"),d.SecretsFound);d.TotalLeaves=number(p:GetAttribute("TotalLeaves"),d.TotalLeaves);d.TotalFish=number(p:GetAttribute("TotalFish"),d.TotalFish);d.Rounds=number(p:GetAttribute("Rounds"),d.Rounds);d.JobsCompleted=number(p:GetAttribute("JobsCompleted"),d.JobsCompleted);d.JanitorUnlocked=p:GetAttribute("JanitorUnlocked")==true;d.FisherUnlocked=p:GetAttribute("FisherUnlocked")==true
+ local payload={Money=d.Money,SecretsFound=d.SecretsFound,TotalLeaves=d.TotalLeaves,TotalFish=d.TotalFish,Rounds=d.Rounds,JobsCompleted=d.JobsCompleted,JanitorUnlocked=d.JanitorUnlocked,FisherUnlocked=d.FisherUnlocked,SchemaVersion=4}
  local success=false
  for attempt=1,3 do
   local ok,err=pcall(function()Store:UpdateAsync("u_"..p.UserId,function(old)
