@@ -1,5 +1,5 @@
--- SECRET VILLAGE QUESTS v4
--- Repeatable NPC missions with server validation and completion locking.
+-- SECRET VILLAGE QUESTS v5
+-- Repeatable NPC missions with server validation, completion locking and throttling.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Workspace=game:GetService("Workspace")
@@ -26,6 +26,7 @@ local byId={}
 for _,q in ipairs(quests) do byId[q.id]=q end
 local finishing={}
 local promptCooldown={}
+local completeCooldown={}
 
 local function money(p)
  local l=p:FindFirstChild("leaderstats")
@@ -110,8 +111,6 @@ local function finish(p,q)
  finishing[p]=true
  local m=money(p)
  if not m then finishing[p]=nil;return end
-
- -- Clear the quest before granting rewards to prevent concurrent duplicate completion.
  p:SetAttribute("QuestActive","")
  p:SetAttribute("QuestProgress",0)
  p:SetAttribute("QuestTarget",0)
@@ -126,11 +125,13 @@ end
 
 local function tryComplete(p)
  if not p or not p:IsA("Player") or not p.Parent or not loaded(p) then return end
+ local now=os.clock()
+ if now-(completeCooldown[p]or 0)<0.75 then return end
+ completeCooldown[p]=now
  if finishing[p] then return end
  local id=p:GetAttribute("QuestActive")
  local q=byId[id]
  if not q then return end
-
  local character=p.Character
  local rootPart=character and character:FindFirstChild("HumanoidRootPart")
  local humanoid=character and character:FindFirstChildOfClass("Humanoid")
@@ -139,8 +140,9 @@ local function tryComplete(p)
  if id=="delivery" then
   if (rootPart.Position-target.Position).Magnitude>14 then notify(p,"📦 Подойди к терминалу доставки.");return end
  elseif id=="taxi" then
+  local vehicleRoot=Workspace:FindFirstChild("SECRET_VILLAGE_VEHICLES")
   local seat=humanoid.SeatPart
-  if not seat or not seat:IsDescendantOf(Workspace:FindFirstChild("SECRET_VILLAGE_VEHICLES")) or (rootPart.Position-q.target).Magnitude>16 then
+  if not vehicleRoot or not seat or not seat:IsDescendantOf(vehicleRoot) or (rootPart.Position-q.target).Magnitude>16 then
    notify(p,"🚕 Сядь в такси и привези пассажира к старому дому.")
    return
   end
@@ -155,8 +157,8 @@ local function tryComplete(p)
   p:SetAttribute("QuestProgress",1)
  elseif id=="fisher" then
   local start=math.max(0,p:GetAttribute("QuestStartFish")or 0)
-  local now=math.max(0,p:GetAttribute("TotalFish")or 0)
-  if now-start<5 then notify(p,"🎣 Нужно поймать ещё "..math.max(0,5-(now-start)).." рыб.");return end
+  local nowFish=math.max(0,p:GetAttribute("TotalFish")or 0)
+  if nowFish-start<5 then notify(p,"🎣 Нужно поймать ещё "..math.max(0,5-(nowFish-start)).." рыб.");return end
   p:SetAttribute("QuestProgress",5)
  end
  finish(p,q)
@@ -177,15 +179,15 @@ Players.PlayerAdded:Connect(function(p)
  p:GetAttributeChangedSignal("TotalFish"):Connect(function()
   if p:GetAttribute("QuestActive")=="fisher" then
    local start=p:GetAttribute("QuestStartFish")or 0
-   local now=p:GetAttribute("TotalFish")or 0
-   p:SetAttribute("QuestProgress",math.min(5,math.max(0,now-start)))
+   local nowFish=p:GetAttribute("TotalFish")or 0
+   p:SetAttribute("QuestProgress",math.min(5,math.max(0,nowFish-start)))
   end
  end)
  p:GetAttributeChangedSignal("SecretsFound"):Connect(function()
   if p:GetAttribute("QuestActive")=="explore" then
    local start=p:GetAttribute("QuestStartSecrets")or 0
-   local now=p:GetAttribute("SecretsFound")or 0
-   p:SetAttribute("QuestProgress",now>start and 1 or 0)
+   local nowSecrets=p:GetAttribute("SecretsFound")or 0
+   p:SetAttribute("QuestProgress",nowSecrets>start and 1 or 0)
   end
  end)
 end)
@@ -193,4 +195,5 @@ end)
 Players.PlayerRemoving:Connect(function(p)
  finishing[p]=nil
  promptCooldown[p]=nil
+ completeCooldown[p]=nil
 end)
