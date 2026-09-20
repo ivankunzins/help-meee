@@ -35,15 +35,22 @@ local function installSource(name, source)
 	end
 end
 
--- Install the previously prepared complete visual stack first.
-local baseSource = fetch("INSTALL38.lua")
+-- Install the base world and enhanced forest first.
+local baseSource = fetch("INSTALL36.lua")
 local baseRunner = loadstring(baseSource)
-assert(baseRunner, "INSTALL38 compile failed")
+assert(baseRunner, "INSTALL36 compile failed")
 baseRunner()
 
 task.wait(1)
 
+-- Install the complete bear visual layer.
+local bearSource = fetch("src/ServerScriptService/SecretVillageBearRealismV2.server.lua")
+installSource("SecretVillageBearRealismV2", bearSource)
+
+task.wait(0.5)
+
+-- Install grass coverage and meadow clearings before the forest.
 local meadowSource = fetch("src/ServerScriptService/SecretVillageMeadowsAndGrass.server.lua")
 installSource("SecretVillageMeadowsAndGrass", meadowSource)
 
-print("SECRET VILLAGE INSTALLER v39 COMPLETE: world, forest, bears, grass and meadows installed")
+print("SECRET VILLAGE INSTALLER v39 COMPLETE: base, forest, bears, grass and meadows installed")
