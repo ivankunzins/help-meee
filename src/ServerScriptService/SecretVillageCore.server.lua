@@ -1,4 +1,4 @@
--- SECRET VILLAGE CORE v5
+-- SECRET VILLAGE CORE v6
 -- Server-authoritative core: safe loading, serialized saves, validation and rate limits.
 local Players=game:GetService("Players")
 local DataStoreService=game:GetService("DataStoreService")
@@ -102,9 +102,15 @@ Hint.OnServerEvent:Connect(function(p)
  local m=stats(p);if m.Value<Config.HintCost then notify(p,"❌ Нужно $"..Config.HintCost..".");return end
  m.Value-=Config.HintCost;notify(p,"🔎 Подсказка: "..Config.FoodSellerHint);save(p)
 end)
-Players.PlayerAdded:Connect(function(p)
- if load(p) then task.defer(function()notify(p,"🏘️ Добро пожаловать! У тебя 30 минут. Найди первый секрет.")end)end
-end)
+local function initializePlayer(p)
+ if p and p.Parent and not profiles[p] and load(p) then
+  task.defer(function()notify(p,"🏘️ Добро пожаловать! У тебя 30 минут. Найди первый секрет.")end)
+ end
+end
+Players.PlayerAdded:Connect(initializePlayer)
+for _,p in ipairs(Players:GetPlayers()) do
+ task.spawn(initializePlayer,p)
+end
 Players.PlayerRemoving:Connect(function(p)save(p);profiles[p]=nil;calls[p]=nil;saving[p]=nil end)
 task.spawn(function()
  while true do task.wait(1)
