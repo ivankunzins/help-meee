@@ -1,5 +1,5 @@
--- SECRET VILLAGE CLEAN INSTALLER v29
--- Installs gameplay and exactly one authoritative world layer plus cozy village art.
+-- SECRET VILLAGE CLEAN INSTALLER v30
+-- Installs gameplay and the authoritative world plus cozy village visual layers.
 local HttpService=game:GetService("HttpService")
 local ScriptEditorService=game:GetService("ScriptEditorService")
 local SSS=game:GetService("ServerScriptService")
@@ -7,9 +7,8 @@ local RS=game:GetService("ReplicatedStorage")
 local SPS=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
 local WS=game:GetService("Workspace")
 local BASE="https://raw.githubusercontent.com/ivankunzins/help-meee/main/"
-local CACHE="?install=29"
+local CACHE="?install=30"
 
--- Legacy scripts that caused duplicate visual/world layers.
 local legacy={
  "SecretVillageWorld","SecretVillageVillageLife","SecretVillageRuralDetail","SecretVillageGraphics","SecretVillageEnvironmentArt",
  "SecretVillageGraphicsArchitecture","SecretVillageGraphicsCinematic","SecretVillageGraphicsOverhaul","SecretVillageGraphicsOverhaul2",
@@ -19,7 +18,6 @@ local legacy={
 }
 for _,n in ipairs(legacy) do local x=SSS:FindFirstChild(n);if x then x:Destroy()end end
 
--- Remove old generated world folders, but never touch gameplay folders.
 local oldWorld={"SECRET_VILLAGE_LIFE","FINAL_ART_PASS","SECRET_VILLAGE_WORLD_FINAL","SECRET_VILLAGE_FINAL_MASTER","GRAPHICS_OVERHAUL","GRAPHICS_OVERHAUL_V2","GRAPHICS_CINEMATIC","GRAPHICS_HERO_PROPS","GRAPHICS_HERO_ASSETS","ARCHITECTURE_FINAL","VISUAL_WORLD_V2","WORLD_FINAL","VISUAL_MASTER","VISUAL_PRESENTATION_FINAL","SECRET_VILLAGE_RURAL_DETAIL","SECRET_VILLAGE_PRESENTATION_RECOVERY","TerrainFinish","ArchitectureFinish","VillageSquareFinish","RiverFinish","FarmFinish","FOREST_PERIMETER","FOREST_FLOOR","DANGEROUS_BEAR_ZONE"}
 for _,n in ipairs(oldWorld) do local x=WS:FindFirstChild(n);if x then x:Destroy()end end
 
@@ -34,8 +32,9 @@ local files={
  {"src/ServerScriptService/SecretVillageAchievements.server.lua","Script"},{"src/ServerScriptService/SecretVillageDailyV2.server.lua","Script"},
  {"src/ServerScriptService/SecretVillageVehicles.server.lua","Script"},{"src/ServerScriptService/SecretVillageCoop.server.lua","Script"},
  {"src/ServerScriptService/SecretVillageUnifiedWorld.server.lua","Script"},{"src/ServerScriptService/SecretVillageFinalWorldMaster.server.lua","Script"},
- {"src/ServerScriptService/SecretVillageCozyVillage.server.lua","Script"},{"src/ServerScriptService/SecretVillageSkyCycleFinal.server.lua","Script"},
- {"src/ServerScriptService/SecretVillageBootAudit.server.lua","Script"},{"src/StarterPlayer/StarterPlayerScripts/SecretVillage.client.lua","LocalScript"}
+ {"src/ServerScriptService/SecretVillageCozyVillage.server.lua","Script"},{"src/ServerScriptService/SecretVillageCozyDetails.server.lua","Script"},
+ {"src/ServerScriptService/SecretVillageSkyCycleFinal.server.lua","Script"},{"src/ServerScriptService/SecretVillageBootAudit.server.lua","Script"},
+ {"src/StarterPlayer/StarterPlayerScripts/SecretVillage.client.lua","LocalScript"}
 }
 local function parentFor(path)
  if path:find("src/ReplicatedStorage/SecretVillage/",1,true) then return RS:FindFirstChild("SecretVillage") or Instance.new("Folder",RS) end
@@ -44,7 +43,7 @@ local function parentFor(path)
 end
 local function objName(path)return path:match("([^/]+)$"):gsub("%.server%.lua$",""):gsub("%.client%.lua$",""):gsub("%.lua$","") end
 local sec=RS:FindFirstChild("SecretVillage") or Instance.new("Folder");sec.Name="SecretVillage";sec.Parent=RS
-print("SECRET VILLAGE CLEAN INSTALLER v29 | FILES: "..#files)
+print("SECRET VILLAGE CLEAN INSTALLER v30 | FILES: "..#files)
 local okCount,failCount=0,0
 for i,item in ipairs(files) do
  local path,className=item[1],item[2];local name=objName(path)
@@ -58,4 +57,4 @@ for i,item in ipairs(files) do
  end
 end
 print(string.format("INSTALL COMPLETE: %d/%d OK",okCount,#files));print("FAILED: "..failCount)
-if failCount==0 then print("SUCCESS — ONE AUTHORITATIVE WORLD LAYER + COZY VILLAGE ART. Press Play and wait 10 seconds.")end
+if failCount==0 then print("SUCCESS — AUTHORITATIVE WORLD + COZY VILLAGE + COZY DETAILS. Press Play and wait 10 seconds.")end
