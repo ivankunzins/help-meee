@@ -1,8 +1,9 @@
--- SECRET VILLAGE CORE v4
+-- SECRET VILLAGE CORE v5
 -- Server-authoritative core: safe loading, serialized saves, validation and rate limits.
 local Players=game:GetService("Players")
 local DataStoreService=game:GetService("DataStoreService")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local Workspace=game:GetService("Workspace")
 local Config=require(ReplicatedStorage:WaitForChild("SecretVillage"):WaitForChild("Config"))
 local Store=DataStoreService:GetDataStore("SecretVillage_PlayerData_v4")
 local remotes=ReplicatedStorage:FindFirstChild("SecretVillageRemotes") or Instance.new("Folder")
@@ -15,6 +16,8 @@ local Notify=remote("Notify");local Hint=remote("BuyHint");local StartJob=remote
 local daily=ReplicatedStorage:FindFirstChild("SecretVillageDailyProgress")
 local profiles={};local saving={};local calls={}
 local MIN_JOB_SECONDS=5
+local JOB_NPC_POSITIONS={janitor=Vector3.new(-35,3.5,28),fisher=Vector3.new(65,3.5,25)}
+local JOB_NPC_DISTANCE=20
 local function notify(p,t)if p and p.Parent then Notify:FireClient(p,t)end end
 local function allowedCall(p,key,delay)
  local now=os.clock();calls[p]=calls[p] or {};local last=calls[p][key] or 0
@@ -64,8 +67,16 @@ local function save(p)
  end
  saving[p]=nil;return success
 end
+local function nearJobNpc(p,kind)
+ local position=JOB_NPC_POSITIONS[kind]
+ local character=p.Character
+ local rootPart=character and character:FindFirstChild("HumanoidRootPart")
+ if not position or not rootPart then return false end
+ return (rootPart.Position-position).Magnitude<=JOB_NPC_DISTANCE
+end
 local function beginJob(p,kind)
  if not profiles[p] or not p:GetAttribute("CoreLoaded") or not allowedCall(p,"beginJob",1) then return end
+ if not nearJobNpc(p,kind) then notify(p,"📍 Подойди к NPC, чтобы начать работу.");return end
  local m=stats(p);if p:GetAttribute("InJob")then notify(p,"🛑 Сначала закончи текущую смену.");return end
  if kind~="fisher" and kind~="janitor" then return end
  local cost=kind=="fisher" and Config.FisherCost or Config.JanitorCost
@@ -80,6 +91,7 @@ end
 StartJob.OnServerEvent:Connect(function(p)beginJob(p,"janitor")end)
 BuyFisher.OnServerEvent:Connect(function(p)beginJob(p,"fisher")end)
 EndJob.OnServerEvent:Connect(function(p)
+ if not profiles[p] or not p:GetAttribute("CoreLoaded") then return end
  if not allowedCall(p,"endJob",1) or not p:GetAttribute("InJob") then return end
  local started=tonumber(p:GetAttribute("JobStarted")) or 0
  if os.time()-started<MIN_JOB_SECONDS then notify(p,"⏳ Смена должна длиться минимум "..MIN_JOB_SECONDS.." секунд.");return end
