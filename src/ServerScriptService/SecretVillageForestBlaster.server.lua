@@ -1,10 +1,9 @@
--- SECRET VILLAGE FOREST BLASTER v1
+-- SECRET VILLAGE FOREST BLASTER v2
 -- A fictional in-game blaster pickup near the forest edge.
 -- Server validates shots and damages only dangerous bears.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
 local TOOL_NAME = "Forest Blaster"
@@ -77,6 +76,13 @@ local function createBlaster()
 	light.Brightness = 1.5
 	light.Range = 8
 	light.Parent = core
+
+	local templateFolder = ReplicatedStorage:FindFirstChild("SecretVillageWeaponTemplates")
+	local template = templateFolder and templateFolder:FindFirstChild("ForestBlasterClient")
+	if template and template:IsA("LocalScript") then
+		local clientScript = template:Clone()
+		clientScript.Parent = tool
+	end
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Взять"
@@ -161,4 +167,4 @@ Players.PlayerRemoving:Connect(function(player)
 	lastShot[player] = nil
 end)
 
-print("SECRET VILLAGE FOREST BLASTER v1 READY: pickup near forest and server-validated bear damage")
+print("SECRET VILLAGE FOREST BLASTER v2 READY: pickup near forest and server-validated bear damage")
