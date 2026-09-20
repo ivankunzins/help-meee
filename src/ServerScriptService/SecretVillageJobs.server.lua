@@ -1,4 +1,4 @@
--- SECRET VILLAGE JOBS v4
+-- SECRET VILLAGE JOBS v5
 -- Concrete job gameplay with shared configuration and server validation.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
@@ -9,6 +9,14 @@ local BuyFisher=remotes:WaitForChild("BuyFisher")
 local root=workspace:FindFirstChild("SECRET_JOBS") or Instance.new("Folder")
 root.Name="SECRET_JOBS"
 root.Parent=workspace
+
+-- Prevent duplicate NPCs, fishing spots, leaves and prompt connections when
+-- the script is accidentally initialized more than once in the same server.
+if root:GetAttribute("JobsInitialized")==true then
+ return
+end
+root:SetAttribute("JobsInitialized",true)
+
 local actionCooldown={}
 
 local function notify(p,message)
